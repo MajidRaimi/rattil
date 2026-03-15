@@ -2,6 +2,9 @@
   "name": "quran",
   "private": true,
   "workspaces": ["apps/*"],
+  "scripts": {
+    "build:db": "bun run scripts/build-db.ts"
+  },
   "devDependencies": {
     "turbo": "latest"
   }
