@@ -1,4 +1,4 @@
-package com.quran.quran_mobile
+package app.rattil
 
 import io.flutter.embedding.android.FlutterActivity
 
