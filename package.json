@@ -1,0 +1,8 @@
+{
+  "name": "quran",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "devDependencies": {
+    "turbo": "latest"
+  }
+}
