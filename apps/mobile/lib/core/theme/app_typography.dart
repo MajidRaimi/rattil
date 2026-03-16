@@ -1,76 +1,96 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
+import 'app_color_scheme.dart';
 
-abstract final class AppTypography {
-  // Arabic - Quranic text
-  static const TextStyle quranArabic = TextStyle(
-    fontFamily: 'UthmanicHafs',
-    fontSize: 28,
-    height: 2.0,
-    color: AppColors.textArabic,
-    letterSpacing: 0,
-  );
+class AppTypography {
+  final String locale;
+  final AppColorScheme colors;
 
-  // Arabic - UI text
-  static const TextStyle uiArabic = TextStyle(
-    fontFamily: 'Amiri',
-    fontSize: 18,
-    height: 1.6,
-    color: AppColors.textPrimary,
-  );
+  const AppTypography._(this.locale, this.colors);
 
-  // Arabic - Surah name in lists
-  static const TextStyle surahNameArabic = TextStyle(
-    fontFamily: 'Amiri',
-    fontSize: 22,
-    fontWeight: FontWeight.w700,
-    height: 1.4,
-    color: AppColors.textPrimary,
-  );
+  factory AppTypography.of(String locale, AppColorScheme colors) {
+    return AppTypography._(locale, colors);
+  }
 
-  // Latin text styles
-  static const TextStyle headlineLarge = TextStyle(
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary,
-    letterSpacing: -0.5,
-  );
+  String get _uiFont => 'NeueFrutigerWorld';
 
-  static const TextStyle headlineMedium = TextStyle(
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+  // ── Quranic text ──
 
-  static const TextStyle titleMedium = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+  TextStyle get quranArabic => TextStyle(
+        fontFamily: 'UthmanicHafs',
+        fontSize: 28,
+        height: 2.0,
+        color: colors.textArabic,
+        letterSpacing: 0,
+      );
 
-  static const TextStyle bodyLarge = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
-    height: 1.5,
-  );
+  // ── Arabic proper nouns (surah names, headers) ──
 
-  static const TextStyle bodyMedium = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
-  );
+  TextStyle get arabicDisplay => TextStyle(
+        fontFamily: 'NeueFrutigerWorld',
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        height: 1.4,
+        color: colors.textPrimary,
+      );
 
-  static const TextStyle bodySmall = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textTertiary,
-  );
+  TextStyle get arabicDisplayBody => TextStyle(
+        fontFamily: 'NeueFrutigerWorld',
+        fontSize: 18,
+        height: 1.6,
+        color: colors.textPrimary,
+      );
 
-  static const TextStyle labelMedium = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textSecondary,
-    letterSpacing: 0.5,
-  );
+  // ── Locale-aware UI text ──
+
+  TextStyle get headlineLarge => TextStyle(
+        fontFamily: _uiFont,
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        color: colors.textPrimary,
+        letterSpacing: -0.5,
+      );
+
+  TextStyle get headlineMedium => TextStyle(
+        fontFamily: _uiFont,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: colors.textPrimary,
+      );
+
+  TextStyle get titleMedium => TextStyle(
+        fontFamily: _uiFont,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: colors.textPrimary,
+      );
+
+  TextStyle get bodyLarge => TextStyle(
+        fontFamily: _uiFont,
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: colors.textSecondary,
+        height: 1.5,
+      );
+
+  TextStyle get bodyMedium => TextStyle(
+        fontFamily: _uiFont,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: colors.textSecondary,
+      );
+
+  TextStyle get bodySmall => TextStyle(
+        fontFamily: _uiFont,
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        color: colors.textTertiary,
+      );
+
+  TextStyle get labelMedium => TextStyle(
+        fontFamily: _uiFont,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: colors.textSecondary,
+        letterSpacing: 0.5,
+      );
 }

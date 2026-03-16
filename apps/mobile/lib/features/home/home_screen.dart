@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
+import '../../core/theme/typography_ext.dart';
 import '../../providers/quran_providers.dart';
 import 'widgets/last_read_card.dart';
 import 'widgets/surah_list_tile.dart';
@@ -13,6 +12,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final typo = context.typography;
     final surahsAsync = ref.watch(allSurahsProvider);
 
     return Scaffold(
@@ -25,10 +26,10 @@ class HomeScreen extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('القرآن الكريم', style: AppTypography.surahNameArabic),
+                    Text('القرآن الكريم', style: typo.arabicDisplay),
                     IconButton(
                       onPressed: () => context.push(AppRouter.settings),
-                      icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
+                      icon: Icon(Icons.settings_outlined, color: colors.textSecondary),
                     ),
                   ],
                 ),
@@ -38,7 +39,7 @@ class HomeScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                child: Text('Surahs', style: AppTypography.headlineMedium),
+                child: Text('Surahs', style: typo.headlineMedium),
               ),
             ),
             surahsAsync.when(
@@ -48,12 +49,12 @@ class HomeScreen extends ConsumerWidget {
                   childCount: surahs.length,
                 ),
               ),
-              loading: () => const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator(color: AppColors.gold)),
+              loading: () => SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator(color: colors.gold)),
               ),
               error: (error, _) => SliverFillRemaining(
                 child: Center(
-                  child: Text('Error loading surahs', style: AppTypography.bodyLarge),
+                  child: Text('Error loading surahs', style: typo.bodyLarge),
                 ),
               ),
             ),

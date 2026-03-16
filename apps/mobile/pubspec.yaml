@@ -20,6 +20,17 @@ dependencies:
   shimmer: ^3.0.0
   json_annotation: ^4.9.0
   freezed_annotation: ^2.4.4
+  quran: ^1.4.1
+  imad_flutter:
+    path: ../../mushaf-imad-flutter
+  flutter_floating_bottom_bar: ^1.4.0
+  flutter_screenutil: ^5.9.3
+  flutter_locales: ^3.0.3
+  flutter_localizations:
+    sdk: flutter
+  quran_flutter: ^1.0.3
+  dio: ^5.9.2
+  just_audio: ^0.10.5
 
 dev_dependencies:
   flutter_test:
@@ -38,13 +49,17 @@ flutter:
 
   assets:
     - assets/db/
+    - assets/locales/
 
   fonts:
     - family: UthmanicHafs
       fonts:
         - asset: assets/fonts/UthmanicHafs.ttf
-    - family: Amiri
+    - family: NeueFrutigerWorld
       fonts:
-        - asset: assets/fonts/Amiri-Regular.ttf
-        - asset: assets/fonts/Amiri-Bold.ttf
+        - asset: assets/fonts/NeueFrutigerWorld-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NeueFrutigerWorld-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/NeueFrutigerWorld-Bold.ttf
           weight: 700

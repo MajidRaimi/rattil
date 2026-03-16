@@ -330,5 +330,161 @@ final readingProgressProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ReadingProgressRef = AutoDisposeFutureProviderRef<Map<String, int>>;
+String _$bookmarkKeysHash() => r'ca797d5e5c2e8ab0c953ff2b36f8ea4a1ab7f23e';
+
+/// See also [bookmarkKeys].
+@ProviderFor(bookmarkKeys)
+final bookmarkKeysProvider = AutoDisposeFutureProvider<Set<String>>.internal(
+  bookmarkKeys,
+  name: r'bookmarkKeysProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$bookmarkKeysHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef BookmarkKeysRef = AutoDisposeFutureProviderRef<Set<String>>;
+String _$allBookmarksHash() => r'c2f343c6cc58c464f2336a645fe2a15bf0b1e8cd';
+
+/// See also [allBookmarks].
+@ProviderFor(allBookmarks)
+final allBookmarksProvider =
+    AutoDisposeFutureProvider<List<Map<String, dynamic>>>.internal(
+      allBookmarks,
+      name: r'allBookmarksProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$allBookmarksHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AllBookmarksRef =
+    AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
+String _$searchResultsHash() => r'a67aee25e0f16cd9c33d7b59379d9205c1ca6ab1';
+
+/// See also [searchResults].
+@ProviderFor(searchResults)
+const searchResultsProvider = SearchResultsFamily();
+
+/// See also [searchResults].
+class SearchResultsFamily extends Family<AsyncValue<SearchState>> {
+  /// See also [searchResults].
+  const SearchResultsFamily();
+
+  /// See also [searchResults].
+  SearchResultsProvider call(String query) {
+    return SearchResultsProvider(query);
+  }
+
+  @override
+  SearchResultsProvider getProviderOverride(
+    covariant SearchResultsProvider provider,
+  ) {
+    return call(provider.query);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'searchResultsProvider';
+}
+
+/// See also [searchResults].
+class SearchResultsProvider extends AutoDisposeFutureProvider<SearchState> {
+  /// See also [searchResults].
+  SearchResultsProvider(String query)
+    : this._internal(
+        (ref) => searchResults(ref as SearchResultsRef, query),
+        from: searchResultsProvider,
+        name: r'searchResultsProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$searchResultsHash,
+        dependencies: SearchResultsFamily._dependencies,
+        allTransitiveDependencies:
+            SearchResultsFamily._allTransitiveDependencies,
+        query: query,
+      );
+
+  SearchResultsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.query,
+  }) : super.internal();
+
+  final String query;
+
+  @override
+  Override overrideWith(
+    FutureOr<SearchState> Function(SearchResultsRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: SearchResultsProvider._internal(
+        (ref) => create(ref as SearchResultsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        query: query,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<SearchState> createElement() {
+    return _SearchResultsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SearchResultsProvider && other.query == query;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, query.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin SearchResultsRef on AutoDisposeFutureProviderRef<SearchState> {
+  /// The parameter `query` of this provider.
+  String get query;
+}
+
+class _SearchResultsProviderElement
+    extends AutoDisposeFutureProviderElement<SearchState>
+    with SearchResultsRef {
+  _SearchResultsProviderElement(super.provider);
+
+  @override
+  String get query => (origin as SearchResultsProvider).query;
+}
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

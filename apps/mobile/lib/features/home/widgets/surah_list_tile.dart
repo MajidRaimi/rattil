@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/typography_ext.dart';
 import '../../../data/models/surah.dart';
 
 class SurahListTile extends StatelessWidget {
@@ -12,6 +11,8 @@ class SurahListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
     return InkWell(
       onTap: () => context.push(AppRouter.readerPath(surah.number)),
       child: Padding(
@@ -31,15 +32,15 @@ class SurahListTile extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.gold, width: 1.5),
+                        border: Border.all(color: colors.gold, width: 1.5),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),
                   Text(
                     '${surah.number}',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.gold,
+                    style: typo.bodySmall.copyWith(
+                      color: colors.gold,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -52,11 +53,11 @@ class SurahListTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(surah.nameEnglish, style: AppTypography.titleMedium),
+                  Text(surah.nameEnglish, style: typo.titleMedium),
                   const SizedBox(height: 2),
                   Text(
                     '${surah.revelationType.toUpperCase()} • ${surah.ayahCount} Ayahs',
-                    style: AppTypography.bodySmall,
+                    style: typo.bodySmall,
                   ),
                 ],
               ),
@@ -64,8 +65,8 @@ class SurahListTile extends StatelessWidget {
             // Arabic name
             Text(
               surah.nameArabic,
-              style: AppTypography.surahNameArabic.copyWith(
-                color: AppColors.textPrimary,
+              style: typo.arabicDisplay.copyWith(
+                color: colors.textPrimary,
                 fontSize: 20,
               ),
             ),

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_router.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/typography_ext.dart';
 import '../../../providers/quran_providers.dart';
 
 class LastReadCard extends ConsumerWidget {
@@ -12,17 +11,22 @@ class LastReadCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final progressAsync = ref.watch(readingProgressProvider);
+    final typo = context.typography;
+    final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1F1A0E), Color(0xFF0D0D0D)],
+            colors: [
+              Color.lerp(colors.surface, colors.gold, 0.08)!,
+              colors.background,
+            ],
           ),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+          border: Border.all(color: colors.gold.withValues(alpha: 0.2)),
         ),
         child: Material(
           color: Colors.transparent,
@@ -31,7 +35,10 @@ class LastReadCard extends ConsumerWidget {
             onTap: () {
               final progress = progressAsync.valueOrNull;
               if (progress != null) {
-                context.push(AppRouter.readerPath(progress['surah_number']!));
+                context.push(AppRouter.readerPath(
+                  progress['surah_number']!,
+                  ayah: progress['ayah_number']!,
+                ));
               }
             },
             child: Padding(
@@ -47,8 +54,8 @@ class LastReadCard extends ConsumerWidget {
                           children: [
                             Text(
                               'Last Read',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: AppColors.goldDim,
+                              style: typo.bodySmall.copyWith(
+                                color: colors.goldDim,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -56,30 +63,30 @@ class LastReadCard extends ConsumerWidget {
                             surahData.when(
                               data: (surah) => Text(
                                 surah?.nameEnglish ?? 'Al-Fatiha',
-                                style: AppTypography.headlineMedium,
+                                style: typo.headlineMedium,
                               ),
                               loading: () => const SizedBox(height: 28),
-                              error: (_, __) => Text('Al-Fatiha', style: AppTypography.headlineMedium),
+                              error: (_, __) => Text('Al-Fatiha', style: typo.headlineMedium),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Ayah ${progress['ayah_number']}',
-                              style: AppTypography.bodyMedium,
+                              style: typo.bodyMedium,
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.play_circle_filled,
-                        color: AppColors.gold,
+                        color: colors.gold,
                         size: 48,
                       ),
                     ],
                   );
                 },
-                loading: () => const SizedBox(
+                loading: () => SizedBox(
                   height: 80,
-                  child: Center(child: CircularProgressIndicator(color: AppColors.gold)),
+                  child: Center(child: CircularProgressIndicator(color: colors.gold)),
                 ),
                 error: (_, __) => const SizedBox(height: 80),
               ),
