@@ -9,6 +9,10 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../core/theme/typography_ext.dart';
 import '../../data/models/ayah.dart';
 import '../../providers/quran_providers.dart';
+import 'widgets/page_picker_sheet.dart';
+import 'widgets/surah_picker_sheet.dart';
+import 'widgets/juz_picker_sheet.dart';
+import 'widgets/hizb_picker_sheet.dart';
 
 /// Direct surah reader — opened from search results or bookmarks.
 class ReaderScreen extends ConsumerStatefulWidget {
@@ -128,6 +132,75 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     ref.invalidate(allBookmarksProvider);
   }
 
+  void _showPagePicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => PagePickerSheet(
+        currentPage: _currentPage,
+        onPageSelected: (page) {
+          _mushafPageKey.currentState?.goToPage(page);
+        },
+      ),
+    );
+  }
+
+  void _showSurahPicker() {
+    final pageData = quran.getPageData(_currentPage);
+    final currentSurah =
+        pageData.isNotEmpty ? pageData.first['surah'] as int : 1;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: SurahPickerSheet(
+          currentSurahNumber: currentSurah,
+          onSurahSelected: (surahNumber) {
+            final page = quran.getPageNumber(surahNumber, 1);
+            _mushafPageKey.currentState?.goToPage(page);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showJuzPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: JuzPickerSheet(
+          currentJuz: _currentJuz,
+          onJuzSelected: (startPage) {
+            _mushafPageKey.currentState?.goToPage(startPage);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showHizbPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: HizbPickerSheet(
+          currentHizb: _currentHizb,
+          onHizbSelected: (startPage) {
+            _mushafPageKey.currentState?.goToPage(startPage);
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -193,16 +266,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            '${Locales.string(context, 'page')} $_currentPage / 604',
-                            style: metaStyle.copyWith(fontWeight: FontWeight.w400),
+                          GestureDetector(
+                            onTap: _showPagePicker,
+                            child: Text(
+                              '${Locales.string(context, 'page')} $_currentPage / 604',
+                              style: metaStyle.copyWith(fontWeight: FontWeight.w400),
+                            ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            _currentSurahName,
-                            style: typo.arabicDisplay.copyWith(
-                              fontSize: 16,
-                              color: colors.gold,
+                          GestureDetector(
+                            onTap: _showSurahPicker,
+                            child: Text(
+                              _currentSurahName,
+                              style: typo.arabicDisplay.copyWith(
+                                fontSize: 16,
+                                color: colors.gold,
+                              ),
                             ),
                           ),
                         ],
@@ -213,9 +292,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
+                          GestureDetector(
+                            onTap: _showJuzPicker,
+                            child: Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
+                          ),
                           const SizedBox(height: 2),
-                          Text('${Locales.string(context, 'hizb_label')} ${ordinal(_currentHizb, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle.copyWith(fontWeight: FontWeight.w400)),
+                          GestureDetector(
+                            onTap: _showHizbPicker,
+                            child: Text('${Locales.string(context, 'hizb_label')} ${ordinal(_currentHizb, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle.copyWith(fontWeight: FontWeight.w400)),
+                          ),
                         ],
                       ),
                       IconButton(

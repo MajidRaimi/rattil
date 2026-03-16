@@ -38,10 +38,15 @@ class QuranRepository {
       _datasource.getJuzPageRanges();
   Future<List<Map<String, dynamic>>> getJuzSurahPageRanges() =>
       _datasource.getJuzSurahPageRanges();
+  Future<List<Map<String, int>>> getHizbPageRanges() =>
+      _datasource.getHizbPageRanges();
 
   // Wird (daily reading tracking)
   Future<bool> isWirdCompletedToday() => _datasource.isWirdCompletedToday();
   Future<bool> toggleWirdCompletion() => _datasource.toggleWirdCompletion();
+
+  // Clear all user data
+  Future<void> clearAllUserData() => _datasource.clearAllUserData();
 
   // Search
   Future<List<SearchResultItem>> searchArabic(String query) =>

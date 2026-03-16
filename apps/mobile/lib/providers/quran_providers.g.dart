@@ -421,6 +421,25 @@ final juzSurahPageRangesProvider =
 // ignore: unused_element
 typedef JuzSurahPageRangesRef =
     AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
+String _$hizbPageRangesHash() => r'10d1f5592b8ccd6c5e7a8f7ee87d965b48ee8c46';
+
+/// See also [hizbPageRanges].
+@ProviderFor(hizbPageRanges)
+final hizbPageRangesProvider =
+    AutoDisposeFutureProvider<List<Map<String, int>>>.internal(
+      hizbPageRanges,
+      name: r'hizbPageRangesProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$hizbPageRangesHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef HizbPageRangesRef =
+    AutoDisposeFutureProviderRef<List<Map<String, int>>>;
 String _$wirdCompletedTodayHash() =>
     r'f5b302464bfe0c788dc72b12b434497ac0132025';
 

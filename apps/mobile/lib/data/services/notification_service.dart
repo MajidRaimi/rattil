@@ -65,6 +65,7 @@ class NotificationService {
       channelDescription: 'Daily Quran reading reminder',
       importance: Importance.high,
       priority: Priority.high,
+      icon: '@drawable/ic_stat_notification',
     );
     const iosDetails = DarwinNotificationDetails();
     const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
@@ -83,4 +84,5 @@ class NotificationService {
   static Future<void> cancelWirdReminder() async {
     await _plugin.cancel(_wirdReminderId);
   }
+
 }

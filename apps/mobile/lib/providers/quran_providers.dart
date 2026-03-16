@@ -83,6 +83,11 @@ Future<List<Map<String, dynamic>>> juzSurahPageRanges(ref) {
 }
 
 @riverpod
+Future<List<Map<String, int>>> hizbPageRanges(ref) {
+  return ref.watch(quranRepositoryProvider).getHizbPageRanges();
+}
+
+@riverpod
 Future<bool> wirdCompletedToday(ref) {
   return ref.watch(quranRepositoryProvider).isWirdCompletedToday();
 }

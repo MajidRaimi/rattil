@@ -238,6 +238,24 @@ class QuranLocalDatasource {
         .toList();
   }
 
+  /// Returns page ranges for each hizb: [{hizb, startPage, endPage}, ...]
+  Future<List<Map<String, int>>> getHizbPageRanges() async {
+    final db = await database;
+    final results = await db.rawQuery('''
+      SELECT hizb, MIN(page) as start_page, MAX(page) as end_page
+      FROM ayahs
+      GROUP BY hizb
+      ORDER BY hizb
+    ''');
+    return results
+        .map((r) => {
+              'hizb': r['hizb'] as int,
+              'startPage': r['start_page'] as int,
+              'endPage': r['end_page'] as int,
+            })
+        .toList();
+  }
+
   /// Returns page ranges per surah within each juz.
   Future<List<Map<String, dynamic>>> getJuzSurahPageRanges() async {
     final db = await database;
@@ -282,6 +300,24 @@ class QuranLocalDatasource {
       await db.insert('wird_completions', {'date': today});
       return true;
     }
+  }
+
+  Future<void> clearAllUserData() async {
+    final db = await database;
+    final batch = db.batch();
+    batch.delete('bookmarks');
+    batch.delete('hifz_pages');
+    batch.delete('wird_completions');
+    batch.update(
+      'reading_progress',
+      {
+        'surah_number': 1,
+        'ayah_number': 1,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = 1',
+    );
+    await batch.commit(noResult: true);
   }
 
   Future<List<SearchResultItem>> searchArabic(String query) async {

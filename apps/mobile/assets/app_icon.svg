@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Light background -->
+  <rect width="1024" height="1024" fill="#f5f5f0"/>
+
+  <!-- Book mark in gold, rotated 90deg, centered -->
+  <g transform="translate(512, 512) rotate(90) scale(4.2) translate(-50, -57)" fill="#D4A843">
+    <!-- Upper spine -->
+    <polygon points="0,0 24,0 24,44 0,52"/>
+    <!-- Upper arm (tilted ~2° inward) -->
+    <g transform="rotate(-2, 70, 25)">
+      <polygon points="30,30 100,0 100,22 42,50"/>
+    </g>
+    <!-- Lower arm (tilted ~2° inward) -->
+    <g transform="rotate(2, 70, 95)">
+      <polygon points="42,64 100,92 100,114 30,84"/>
+    </g>
+    <!-- Lower spine -->
+    <polygon points="0,62 24,70 24,114 0,114"/>
+  </g>
+</svg>

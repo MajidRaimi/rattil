@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <!-- White monochrome book mark on transparent background for Android notifications -->
+  <g transform="translate(48, 46) rotate(90) scale(0.38) translate(-50, -57)" fill="#FFFFFF">
+    <polygon points="0,0 24,0 24,44 0,52"/>
+    <g transform="rotate(-2, 70, 25)">
+      <polygon points="30,30 100,0 100,22 42,50"/>
+    </g>
+    <g transform="rotate(2, 70, 95)">
+      <polygon points="42,64 100,92 100,114 30,84"/>
+    </g>
+    <polygon points="0,62 24,70 24,114 0,114"/>
+  </g>
+</svg>

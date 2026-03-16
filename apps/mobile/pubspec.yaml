@@ -38,6 +38,7 @@ dependencies:
   flutter_local_notifications: ^19.0.0
   flutter_timezone: ^3.0.1
   timezone: ^0.10.0
+  flutter_native_splash: ^2.4.7
 
 dev_dependencies:
   flutter_test:
@@ -47,6 +48,39 @@ dev_dependencies:
   riverpod_generator: ^2.6.3
   freezed: ^2.5.8
   json_serializable: ^6.9.5
+  flutter_launcher_icons: ^0.14.4
+  rename_app: ^1.6.5
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/app_icon.png"
+  adaptive_icon_background: "#f5f5f0"
+  adaptive_icon_foreground: "assets/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/app_icon.png"
+    background_color: "#f5f5f0"
+    theme_color: "#D4A843"
+  windows:
+    generate: true
+    image_path: "assets/app_icon.png"
+  macos:
+    generate: true
+    image_path: "assets/app_icon.png"
+
+flutter_native_splash:
+  color: "#f5f5f0"
+  color_dark: "#1a1a1a"
+  image: assets/splash_logo.png
+  android_12:
+    color: "#f5f5f0"
+    color_dark: "#1a1a1a"
+    image: assets/splash_logo.png
+  ios: true
+  web: true
 
 dependency_overrides:
   analyzer_plugin: ^0.13.0
@@ -57,6 +91,7 @@ flutter:
   assets:
     - assets/db/
     - assets/locales/
+    - assets/app_icon.png
 
   fonts:
     - family: UthmanicHafs

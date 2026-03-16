@@ -6,7 +6,11 @@ import 'package:quran/quran.dart' as quran;
 import '../../core/constants/supported_languages.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/typography_ext.dart';
+import '../../data/services/notification_service.dart';
+import '../../providers/quran_providers.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/tikrar_provider.dart';
+import '../../providers/wird_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -23,54 +27,54 @@ class SettingsScreen extends ConsumerWidget {
 
     return ThemeSwitchingArea(
       child: Scaffold(
+        backgroundColor: colors.background,
         body: SafeArea(
           child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          children: [
-            const SizedBox(height: 24),
-            Text(
-              Locales.string(context, 'settings'),
-              style: typo.headlineMedium.copyWith(
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _SectionCard(
-              titleKey: 'language',
-              children: [
-                _LanguageTile(
-                  nativeName: currentLang.nativeName,
-                  englishName: currentLang.englishName,
-                  onTap: () => _showLanguagePicker(context),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: [
+              const SizedBox(height: 24),
+              Text(
+                Locales.string(context, 'settings'),
+                style: typo.headlineMedium.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _ThemeSection(),
-            const SizedBox(height: 16),
-            _SectionCard(
-              titleKey: 'about',
-              children: [
-                _InfoTile(labelKey: 'app_name', value: Locales.string(context, 'app_name')),
-                _InfoTile(labelKey: 'total_surahs', value: '${quran.totalSurahCount}'),
-                _InfoTile(labelKey: 'total_ayahs', value: '${quran.totalVerseCount}'),
-                _InfoTile(labelKey: 'total_juz', value: '${quran.totalJuzCount}'),
-                _InfoTile(labelKey: 'total_pages', value: '${quran.totalPagesCount}'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _SectionCard(
-              titleKey: 'data',
-              children: [
-                _InfoTile(labelKey: 'translation', value: Locales.string(context, 'saheeh_international')),
-                _InfoTile(labelKey: 'arabic_script', value: Locales.string(context, 'uthmanic_hafs')),
-              ],
-            ),
-            const SizedBox(height: 32),
-          ],
+              ),
+              const SizedBox(height: 24),
+
+              // ── Language ──
+              _SectionCard(
+                titleKey: 'language',
+                children: [
+                  _LanguageTile(
+                    nativeName: currentLang.nativeName,
+                    englishName: currentLang.englishName,
+                    onTap: () => _showLanguagePicker(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ── Theme ──
+              _ThemeSection(),
+              const SizedBox(height: 16),
+
+              // ── Help & Support ──
+              _FaqSection(),
+              const SizedBox(height: 16),
+
+              // ── About ──
+              _AboutSection(),
+              const SizedBox(height: 24),
+
+              // ── Clear Data ──
+              _ClearDataButton(
+                onTap: () => _showClearDataDialog(context, ref),
+              ),
+              const SizedBox(height: 100),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -83,7 +87,170 @@ class SettingsScreen extends ConsumerWidget {
       builder: (_) => const _LanguagePickerSheet(),
     );
   }
+
+  void _showClearDataDialog(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final typo = context.typography;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          Locales.string(context, 'clear_data'),
+          style: typo.titleMedium.copyWith(
+            color: colors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          Locales.string(context, 'clear_data_confirm'),
+          style: typo.bodyMedium.copyWith(
+            color: colors.textSecondary,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              Locales.string(context, 'wird_cancel'),
+              style: typo.bodyLarge.copyWith(color: colors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _clearAllData(context, ref);
+            },
+            child: Text(
+              Locales.string(context, 'clear_data'),
+              style: typo.bodyLarge.copyWith(
+                color: colors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearAllData(BuildContext context, WidgetRef ref) async {
+    final repo = ref.read(quranRepositoryProvider);
+    await repo.clearAllUserData();
+    await ref.read(wirdConfigNotifierProvider.notifier).clearWird();
+    await ref.read(tikrarSessionsProvider.notifier).clearAllSessions();
+    await NotificationService.cancelWirdReminder();
+
+    ref.invalidate(bookmarkKeysProvider);
+    ref.invalidate(allBookmarksProvider);
+    ref.invalidate(memorizedPagesProvider);
+    ref.invalidate(readingProgressProvider);
+    ref.invalidate(wirdCompletedTodayProvider);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(Locales.string(context, 'clear_data_success')),
+        ),
+      );
+    }
+  }
 }
+
+// ── Reusable section card ──
+
+class _SectionCard extends StatelessWidget {
+  final String titleKey;
+  final List<Widget> children;
+
+  const _SectionCard({required this.titleKey, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
+          child: Text(
+            Locales.string(context, titleKey).toUpperCase(),
+            style: typo.bodySmall.copyWith(
+              color: colors.goldDim,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(children: children),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Language tile ──
+
+class _LanguageTile extends StatelessWidget {
+  final String nativeName;
+  final String englishName;
+  final VoidCallback onTap;
+
+  const _LanguageTile({
+    required this.nativeName,
+    required this.englishName,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nativeName,
+                    style: typo.bodyLarge.copyWith(color: colors.textPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    englishName,
+                    style: typo.bodySmall.copyWith(color: colors.textTertiary),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: colors.textTertiary,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Theme section ──
 
 class _ThemeSection extends ConsumerWidget {
   @override
@@ -158,8 +325,7 @@ class _ThemeChip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final typo = context.typography;
     final colors = context.colors;
-    final langCode =
-        Locales.currentLocale(context)?.languageCode ?? 'en';
+    final langCode = Locales.currentLocale(context)?.languageCode ?? 'en';
 
     return ThemeSwitcher.withTheme(
       builder: (context, switcher, currentTheme) {
@@ -207,10 +373,8 @@ class _ThemeChip extends ConsumerWidget {
                 Text(
                   Locales.string(context, labelKey),
                   style: typo.bodySmall.copyWith(
-                    color:
-                        isSelected ? colors.gold : colors.textSecondary,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: isSelected ? colors.gold : colors.textSecondary,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
               ],
@@ -222,23 +386,29 @@ class _ThemeChip extends ConsumerWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  final String titleKey;
-  final List<Widget> children;
+// ── FAQ section ──
 
-  const _SectionCard({required this.titleKey, required this.children});
+class _FaqSection extends StatelessWidget {
+  static const _faqs = [
+    ('faq_navigate_q', 'faq_navigate_a'),
+    ('faq_wird_q', 'faq_wird_a'),
+    ('faq_tikrar_q', 'faq_tikrar_a'),
+    ('faq_offline_q', 'faq_offline_a'),
+    ('faq_hifz_q', 'faq_hifz_a'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final typo = context.typography;
     final colors = context.colors;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
           child: Text(
-            Locales.string(context, titleKey).toUpperCase(),
+            Locales.string(context, 'help_support').toUpperCase(),
             style: typo.bodySmall.copyWith(
               color: colors.goldDim,
               letterSpacing: 1.2,
@@ -251,59 +421,134 @@ class _SectionCard extends StatelessWidget {
             color: colors.surface,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Column(children: children),
+          child: Column(
+            children: [
+              for (int i = 0; i < _faqs.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                      height: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: colors.divider),
+                Theme(
+                  data: Theme.of(context)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                    childrenPadding:
+                        const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    iconColor: colors.textTertiary,
+                    collapsedIconColor: colors.textTertiary,
+                    title: Text(
+                      Locales.string(context, _faqs[i].$1),
+                      style: typo.bodyLarge.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    children: [
+                      Text(
+                        Locales.string(context, _faqs[i].$2),
+                        style: typo.bodyMedium.copyWith(
+                          color: colors.textSecondary,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-class _LanguageTile extends StatelessWidget {
-  final String nativeName;
-  final String englishName;
-  final VoidCallback onTap;
+// ── About section ──
 
-  const _LanguageTile({
-    required this.nativeName,
-    required this.englishName,
-    required this.onTap,
-  });
-
+class _AboutSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typo = context.typography;
     final colors = context.colors;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    nativeName,
-                    style: typo.bodyLarge.copyWith(color: colors.textPrimary),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    englishName,
-                    style: typo.bodySmall.copyWith(color: colors.textTertiary),
-                  ),
-                ],
-              ),
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
+          child: Text(
+            Locales.string(context, 'about').toUpperCase(),
+            style: typo.bodySmall.copyWith(
+              color: colors.goldDim,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w600,
             ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: colors.textTertiary,
-              size: 16,
-            ),
-          ],
+          ),
         ),
-      ),
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              _InfoTile(
+                  labelKey: 'total_surahs',
+                  value: '${quran.totalSurahCount}'),
+              Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: colors.divider),
+              _InfoTile(
+                  labelKey: 'total_ayahs',
+                  value: '${quran.totalVerseCount}'),
+              Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: colors.divider),
+              _InfoTile(
+                  labelKey: 'total_juz', value: '${quran.totalJuzCount}'),
+              Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: colors.divider),
+              _InfoTile(
+                  labelKey: 'total_pages',
+                  value: '${quran.totalPagesCount}'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              _InfoTile(
+                labelKey: 'translation',
+                value: Locales.string(context, 'saheeh_international'),
+              ),
+              Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: colors.divider),
+              _InfoTile(
+                labelKey: 'arabic_script',
+                value: Locales.string(context, 'uthmanic_hafs'),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -333,6 +578,47 @@ class _InfoTile extends StatelessWidget {
     );
   }
 }
+
+// ── Clear Data button ──
+
+class _ClearDataButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ClearDataButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: colors.error.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: colors.error.withValues(alpha: 0.25),
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            Locales.string(context, 'clear_data'),
+            style: typo.bodyLarge.copyWith(
+              color: colors.error,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Language picker sheet ──
 
 class _LanguagePickerSheet extends StatefulWidget {
   const _LanguagePickerSheet();

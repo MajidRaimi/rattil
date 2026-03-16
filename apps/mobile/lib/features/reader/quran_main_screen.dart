@@ -18,6 +18,10 @@ import '../bookmarks/bookmarks_screen.dart';
 import '../hifz/profile_screen.dart';
 import '../search/search_screen.dart';
 import '../settings/settings_screen.dart';
+import 'widgets/page_picker_sheet.dart';
+import 'widgets/surah_picker_sheet.dart';
+import 'widgets/juz_picker_sheet.dart';
+import 'widgets/hizb_picker_sheet.dart';
 
 /// Tab indices: 0=Search, 1=Bookmarks, 2=Quran, 3=Hifz, 4=Settings
 const _kQuranTab = 2;
@@ -195,6 +199,75 @@ class _AppShellState extends ConsumerState<_AppShell> {
   }
 
   void _toggleChrome() => setState(() => _showChrome = !_showChrome);
+
+  void _showPagePicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => PagePickerSheet(
+        currentPage: _currentPage,
+        onPageSelected: (page) {
+          _mushafPageKey.currentState?.goToPage(page);
+        },
+      ),
+    );
+  }
+
+  void _showSurahPicker() {
+    final pageData = quran.getPageData(_currentPage);
+    final currentSurah =
+        pageData.isNotEmpty ? pageData.first['surah'] as int : 1;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: SurahPickerSheet(
+          currentSurahNumber: currentSurah,
+          onSurahSelected: (surahNumber) {
+            final page = quran.getPageNumber(surahNumber, 1);
+            _mushafPageKey.currentState?.goToPage(page);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showJuzPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: JuzPickerSheet(
+          currentJuz: _currentJuz,
+          onJuzSelected: (startPage) {
+            _mushafPageKey.currentState?.goToPage(startPage);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showHizbPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: HizbPickerSheet(
+          currentHizb: _currentHizb,
+          onHizbSelected: (startPage) {
+            _mushafPageKey.currentState?.goToPage(startPage);
+          },
+        ),
+      ),
+    );
+  }
 
   Future<void> _switchTab(int index) async {
     if (index == _activeTab || _transitioning) return;
@@ -556,16 +629,22 @@ class _AppShellState extends ConsumerState<_AppShell> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '${Locales.string(context, 'page')} $_currentPage / 604',
-                        style: metaStyle.copyWith(fontWeight: FontWeight.w400),
+                      GestureDetector(
+                        onTap: _showPagePicker,
+                        child: Text(
+                          '${Locales.string(context, 'page')} $_currentPage / 604',
+                          style: metaStyle.copyWith(fontWeight: FontWeight.w400),
+                        ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        _currentSurahName,
-                        style: typo.arabicDisplay.copyWith(
-                          fontSize: 20,
-                          color: colors.gold,
+                      GestureDetector(
+                        onTap: _showSurahPicker,
+                        child: Text(
+                          _currentSurahName,
+                          style: typo.arabicDisplay.copyWith(
+                            fontSize: 20,
+                            color: colors.gold,
+                          ),
                         ),
                       ),
                     ],
@@ -576,9 +655,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
+                      GestureDetector(
+                        onTap: _showJuzPicker,
+                        child: Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
+                      ),
                       const SizedBox(height: 2),
-                      Text('${Locales.string(context, 'hizb_label')} ${ordinal(_currentHizb, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle.copyWith(fontWeight: FontWeight.w400)),
+                      GestureDetector(
+                        onTap: _showHizbPicker,
+                        child: Text('${Locales.string(context, 'hizb_label')} ${ordinal(_currentHizb, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle.copyWith(fontWeight: FontWeight.w400)),
+                      ),
                     ],
                   ),
                 ],

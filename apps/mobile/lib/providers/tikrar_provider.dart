@@ -139,6 +139,12 @@ class TikrarSessionsNotifier extends Notifier<List<TikrarSession>> {
     state = state.where((s) => s.id != id).toList();
     await _save();
   }
+
+  Future<void> clearAllSessions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kTikrarSessions);
+    state = [];
+  }
 }
 
 final tikrarSessionsProvider =
