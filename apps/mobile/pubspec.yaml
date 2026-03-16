@@ -31,6 +31,7 @@ dependencies:
   quran_flutter: ^1.0.3
   dio: ^5.9.2
   just_audio: ^0.10.5
+  animated_theme_switcher: 2.0.10
 
 dev_dependencies:
   flutter_test:

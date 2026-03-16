@@ -1,8 +1,10 @@
+import 'package:animated_theme_switcher/animated_theme_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quran/quran.dart' as quran;
 import '../../core/constants/supported_languages.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/theme/typography_ext.dart';
 import '../../providers/theme_provider.dart';
 
@@ -19,9 +21,10 @@ class SettingsScreen extends ConsumerWidget {
       orElse: () => supportedLanguages[1],
     );
 
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
+    return ThemeSwitchingArea(
+      child: Scaffold(
+        body: SafeArea(
+          child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           children: [
             const SizedBox(height: 24),
@@ -68,6 +71,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -102,89 +106,118 @@ class _ThemeSection extends ConsumerWidget {
             ),
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              _ThemeTile(
+        Row(
+          children: [
+            Expanded(
+              child: _ThemeChip(
                 icon: Icons.phone_android,
                 labelKey: 'theme_system',
                 isSelected: currentMode == ThemeMode.system,
-                onTap: () => ref
-                    .read(appThemeModeProvider.notifier)
-                    .setThemeMode(ThemeMode.system),
+                targetMode: ThemeMode.system,
               ),
-              _ThemeTile(
-                icon: Icons.light_mode,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ThemeChip(
+                icon: Icons.light_mode_outlined,
                 labelKey: 'theme_light',
                 isSelected: currentMode == ThemeMode.light,
-                onTap: () => ref
-                    .read(appThemeModeProvider.notifier)
-                    .setThemeMode(ThemeMode.light),
+                targetMode: ThemeMode.light,
               ),
-              _ThemeTile(
-                icon: Icons.dark_mode,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ThemeChip(
+                icon: Icons.dark_mode_outlined,
                 labelKey: 'theme_dark',
                 isSelected: currentMode == ThemeMode.dark,
-                onTap: () => ref
-                    .read(appThemeModeProvider.notifier)
-                    .setThemeMode(ThemeMode.dark),
+                targetMode: ThemeMode.dark,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
   }
 }
 
-class _ThemeTile extends StatelessWidget {
+class _ThemeChip extends ConsumerWidget {
   final IconData icon;
   final String labelKey;
   final bool isSelected;
-  final VoidCallback onTap;
+  final ThemeMode targetMode;
 
-  const _ThemeTile({
+  const _ThemeChip({
     required this.icon,
     required this.labelKey,
     required this.isSelected,
-    required this.onTap,
+    required this.targetMode,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final typo = context.typography;
     final colors = context.colors;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? colors.gold : colors.textTertiary,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                Locales.string(context, labelKey),
-                style: typo.bodyLarge.copyWith(
-                  color: isSelected ? colors.gold : colors.textPrimary,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                ),
+    final langCode =
+        Locales.currentLocale(context)?.languageCode ?? 'en';
+
+    return ThemeSwitcher.withTheme(
+      builder: (context, switcher, currentTheme) {
+        return GestureDetector(
+          onTap: () {
+            final newTheme = switch (targetMode) {
+              ThemeMode.light => AppTheme.light(langCode),
+              ThemeMode.dark => AppTheme.dark(langCode),
+              _ => WidgetsBinding
+                          .instance.platformDispatcher.platformBrightness ==
+                      Brightness.dark
+                  ? AppTheme.dark(langCode)
+                  : AppTheme.light(langCode),
+            };
+            switcher.changeTheme(theme: newTheme);
+            ref
+                .read(appThemeModeProvider.notifier)
+                .setThemeMode(targetMode);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? colors.gold.withValues(alpha: 0.12)
+                  : colors.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected
+                    ? colors.gold.withValues(alpha: 0.5)
+                    : colors.divider,
+                width: 1,
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: colors.gold, size: 22),
-          ],
-        ),
-      ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? colors.gold : colors.textTertiary,
+                  size: 22,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  Locales.string(context, labelKey),
+                  style: typo.bodySmall.copyWith(
+                    color:
+                        isSelected ? colors.gold : colors.textSecondary,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

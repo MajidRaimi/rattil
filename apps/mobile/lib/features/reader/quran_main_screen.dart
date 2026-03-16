@@ -611,7 +611,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
           child: AnimatedOpacity(
             opacity: visible ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 250),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut,
               decoration: isDark
                   ? BoxDecoration(
                       gradient: LinearGradient(
@@ -625,20 +627,22 @@ class _AppShellState extends ConsumerState<_AppShell> {
                         stops: const [0.0, 0.5, 1.0],
                       ),
                     )
-                  : null,
+                  : const BoxDecoration(),
               child: Padding(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPad + 12),
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOut,
                   padding: const EdgeInsets.symmetric(
                       horizontal: 4, vertical: 4),
                   decoration: BoxDecoration(
                     color: colors.surface,
                     borderRadius: BorderRadius.circular(24),
-                    border: isDark
-                        ? Border.all(
-                            color: colors.divider.withValues(alpha: 0.5),
-                          )
-                        : null,
+                    border: Border.all(
+                      color: isDark
+                          ? colors.divider.withValues(alpha: 0.5)
+                          : Colors.transparent,
+                    ),
                   ),
                   child: Row(
                     children: [
