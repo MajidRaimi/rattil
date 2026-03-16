@@ -54,7 +54,10 @@ abstract final class AppTheme {
           if (states.contains(WidgetState.selected)) {
             return IconThemeData(color: colors.gold, size: 24);
           }
-          return IconThemeData(color: colors.textSecondary, size: 24);
+          return IconThemeData(
+            color: isDark ? const Color(0xFF9CA3AF) : colors.textSecondary,
+            size: 24,
+          );
         }),
       ),
       cardTheme: CardThemeData(

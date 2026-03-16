@@ -240,7 +240,6 @@ class _LanguageTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final typo = context.typography;
     final colors = context.colors;
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -265,9 +264,9 @@ class _LanguageTile extends StatelessWidget {
               ),
             ),
             Icon(
-              isRtl ? Icons.chevron_left : Icons.chevron_right,
+              Icons.arrow_forward_ios_rounded,
               color: colors.textTertiary,
-              size: 20,
+              size: 16,
             ),
           ],
         ),

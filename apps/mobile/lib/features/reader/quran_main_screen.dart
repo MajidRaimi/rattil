@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_locales/flutter_locales.dart';
+import '../../core/utils/ordinal_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:imad_flutter/imad_flutter.dart' as imad;
 import 'package:just_audio/just_audio.dart';
@@ -557,7 +558,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
                     children: [
                       Text(
                         '${Locales.string(context, 'page')} $_currentPage / 604',
-                        style: metaStyle,
+                        style: metaStyle.copyWith(fontWeight: FontWeight.w400),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -575,9 +576,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('${Locales.string(context, 'juz_label')} $_currentJuz', style: metaStyle),
+                      Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
                       const SizedBox(height: 2),
-                      Text('${Locales.string(context, 'hizb_label')} $_currentHizb', style: metaStyle),
+                      Text('${Locales.string(context, 'hizb_label')} ${ordinal(_currentHizb, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle.copyWith(fontWeight: FontWeight.w400)),
                     ],
                   ),
                 ],
