@@ -9,7 +9,8 @@
   "search_translations": "ابحث في الترجمات...",
   "search_quran_hint": "ابحث عن السور والآيات...",
   "search_the_quran": "ابحث في القرآن",
-  "search_hint": "البحث في الترجمات الإنجليزية",
+  "search_hint": "بإسم السورة أو النص العربي",
+  "try_different_search": "جرّب كلمة بحث مختلفة",
   "surahs_section": "السور",
   "ayahs_section": "الآيات",
   "searching_arabic": "النص العربي",
@@ -19,7 +20,9 @@
   "no_bookmarks_yet": "لا توجد إشارات مرجعية",
   "tap_bookmark_hint": "اضغط على أيقونة الحفظ أثناء القراءة",
   "ayah": "آية",
-  "ayahs": "آيات",
+  "ayahs": "آية",
+  "makkah": "مكية",
+  "madinah": "مدنية",
   "error_loading_bookmarks": "خطأ في تحميل الإشارات",
   "error_loading_surah": "خطأ في تحميل السورة",
   "error_loading_reciters": "فشل تحميل القرّاء",
@@ -86,5 +89,8 @@
   "tafsir_381": "تفسير فتح المجيد",
   "tafsir_804": "تفسير ڕێبەر الكردي",
   "tafsir_817": "تذكير القرآن",
-  "tafsir_818": "تذكير القرآن (أردو)"
+  "tafsir_818": "تذكير القرآن (أردو)",
+  "bookmark_removed": "تم حذف الإشارة",
+  "undo": "تراجع",
+  "bookmarks_section": "الإشارات"
 }

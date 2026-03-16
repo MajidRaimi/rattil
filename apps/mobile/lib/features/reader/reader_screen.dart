@@ -13,11 +13,13 @@ import '../../providers/quran_providers.dart';
 class ReaderScreen extends ConsumerStatefulWidget {
   final int surahNumber;
   final int initialAyah;
+  final bool highlightInitialAyah;
 
   const ReaderScreen({
     super.key,
     required this.surahNumber,
     this.initialAyah = 1,
+    this.highlightInitialAyah = false,
   });
 
   @override
@@ -153,6 +155,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 showPageInfo: false,
                 showAudioPlayer: false,
                 readingTheme: mushafTheme,
+                initialSelectedVerseKey: widget.highlightInitialAyah
+                    ? widget.surahNumber * 1000 + widget.initialAyah
+                    : null,
               ),
             ),
             // ── Top bar ──

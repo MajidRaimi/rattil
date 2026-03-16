@@ -9,7 +9,8 @@
   "search_translations": "অনুবাদে অনুসন্ধান করুন...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "কুরআনে অনুসন্ধান করুন",
-  "search_hint": "ইংরেজি অনুবাদে অনুসন্ধান করুন",
+  "search_hint": "সূরার নাম বা আরবি পাঠ দিয়ে",
+  "try_different_search": "অন্য শব্দ দিয়ে খুঁজুন",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "পড়ার সময় বুকমার্ক আইকনে ট্যাপ করুন",
   "ayah": "আয়াত",
   "ayahs": "আয়াতসমূহ",
+  "makkah": "মক্কী",
+  "madinah": "মাদানী",
   "error_loading_bookmarks": "বুকমার্ক লোড করতে ত্রুটি",
   "error_loading_surah": "সূরা লোড করতে ত্রুটি",
   "error_loading_reciters": "ক্বারীদের লোড করা যায়নি",
@@ -86,5 +89,8 @@
   "tafsir_381": "তাফসীর ফাতহুল মাজীদ",
   "tafsir_804": "রেবার কুর্দি তাফসীর",
   "tafsir_817": "তাযকিরুল কুরআন",
-  "tafsir_818": "তাযকির উল কুরআন (উর্দু)"
+  "tafsir_818": "তাযকির উল কুরআন (উর্দু)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

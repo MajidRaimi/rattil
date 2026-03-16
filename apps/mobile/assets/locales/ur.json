@@ -9,7 +9,8 @@
   "search_translations": "ترجموں میں تلاش کریں...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "قرآن میں تلاش کریں",
-  "search_hint": "انگریزی ترجموں میں تلاش کریں",
+  "search_hint": "سورت کے نام یا عربی متن سے",
+  "try_different_search": "مختلف تلاش آزمائیں",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "پڑھتے وقت بک مارک آئیکن پر ٹیپ کریں",
   "ayah": "آیت",
   "ayahs": "آیات",
+  "makkah": "مکی",
+  "madinah": "مدنی",
   "error_loading_bookmarks": "بک مارکس لوڈ کرنے میں خرابی",
   "error_loading_surah": "سورت لوڈ کرنے میں خرابی",
   "error_loading_reciters": "قاریوں کو لوڈ کرنے میں ناکامی",
@@ -86,5 +89,8 @@
   "tafsir_381": "تفسیر فتح المجید",
   "tafsir_804": "ریبار کردی تفسیر",
   "tafsir_817": "تذکیر القرآن",
-  "tafsir_818": "تذکیر القرآن"
+  "tafsir_818": "تذکیر القرآن",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

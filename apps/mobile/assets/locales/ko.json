@@ -9,7 +9,8 @@
   "search_translations": "번역 검색...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "꾸란 검색",
-  "search_hint": "영어 번역 검색",
+  "search_hint": "By surah name or Arabic text",
+  "try_different_search": "Try a different search term",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "읽는 중에 북마크 아이콘을 탭하세요",
   "ayah": "아야",
   "ayahs": "아야",
+  "makkah": "메카",
+  "madinah": "메디나",
   "error_loading_bookmarks": "북마크 로딩 오류",
   "error_loading_surah": "수라 로딩 오류",
   "error_loading_reciters": "낭독자를 불러오지 못했습니다",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

@@ -9,7 +9,8 @@
   "search_translations": "Cari terjemahan...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Cari dalam Al-Quran",
-  "search_hint": "Cari terjemahan bahasa Inggeris",
+  "search_hint": "Cari nama surah atau teks Arab",
+  "try_different_search": "Cuba carian lain",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Ketik ikon penanda buku semasa membaca",
   "ayah": "Ayat",
   "ayahs": "Ayat",
+  "makkah": "Makkiyyah",
+  "madinah": "Madaniyyah",
   "error_loading_bookmarks": "Ralat memuatkan penanda buku",
   "error_loading_surah": "Ralat memuatkan surah",
   "error_loading_reciters": "Gagal memuatkan qari",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

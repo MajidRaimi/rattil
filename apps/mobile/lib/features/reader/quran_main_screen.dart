@@ -98,6 +98,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
   int _activeTab = _kQuranTab;
   late int _currentPage;
   bool _showChrome = false;
+  bool _transitioning = false;
   int _currentJuz = 1;
   int _currentHizb = 1;
 
@@ -110,6 +111,42 @@ class _AppShellState extends ConsumerState<_AppShell> {
     super.initState();
     _currentPage = widget.initialPage;
     _loadPageMetadata(widget.initialPage);
+  }
+
+  Future<void> _navigateToReader(ReaderNavigationRequest req) async {
+    final page = quran.getPageNumber(req.surahNumber, req.ayahNumber);
+    final verseKey = req.highlight
+        ? req.surahNumber * 1000 + req.ayahNumber
+        : null;
+
+    // If already on the Quran tab, just navigate the page directly.
+    if (_activeTab == _kQuranTab) {
+      _mushafPageKey.currentState?.goToPage(page,
+          highlightVerseKey: verseKey);
+      return;
+    }
+
+    if (_transitioning) return;
+
+    // Phase 1: fade out the current view.
+    setState(() => _transitioning = true);
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
+
+    // Phase 2: switch tab and jump to page (hidden behind overlay).
+    setState(() {
+      _activeTab = _kQuranTab;
+      _showChrome = true;
+    });
+    _mushafPageKey.currentState?.goToPage(page,
+        highlightVerseKey: verseKey);
+
+    // Let the target page render one frame.
+    await Future.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
+
+    // Phase 3: fade in the reader.
+    setState(() => _transitioning = false);
   }
 
   Future<void> _loadPageMetadata(int page) async {
@@ -158,16 +195,37 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
   void _toggleChrome() => setState(() => _showChrome = !_showChrome);
 
-  void _switchTab(int index) {
-    if (index == _activeTab) return;
+  Future<void> _switchTab(int index) async {
+    if (index == _activeTab || _transitioning) return;
+
+    // Fade out
+    setState(() => _transitioning = true);
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
+
+    // Swap content behind overlay
     setState(() {
       _activeTab = index;
       _showChrome = true;
     });
+
+    // Let new view render a frame
+    await Future.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
+
+    // Fade in
+    setState(() => _transitioning = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Listen for navigation requests from search / bookmarks / etc.
+    ref.listen(readerNavigationProvider, (prev, next) {
+      if (next == null) return;
+      ref.read(readerNavigationProvider.notifier).state = null;
+      _navigateToReader(next);
+    });
+
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mushafTheme = isDark
@@ -193,6 +251,19 @@ class _AppShellState extends ConsumerState<_AppShell> {
                   const HifzScreen(),         // 3
                   const SettingsScreen(),     // 4
                 ],
+              ),
+            ),
+
+            // ── Transition overlay (between views and chrome/bar) ──
+            Positioned.fill(
+              child: IgnorePointer(
+                ignoring: !_transitioning,
+                child: AnimatedOpacity(
+                  opacity: _transitioning ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeInOut,
+                  child: ColoredBox(color: colors.background),
+                ),
               ),
             ),
 
@@ -361,20 +432,38 @@ class _AppShellState extends ConsumerState<_AppShell> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: () async {
-                          await ref
-                              .read(quranRepositoryProvider)
-                              .addBookmark(surahNumber, verseNumber);
-                          ref.invalidate(bookmarkKeysProvider);
-                          ref.invalidate(allBookmarksProvider);
-                          if (ctx.mounted) Navigator.pop(ctx);
+                      Consumer(
+                        builder: (ctx2, ref2, _) {
+                          final keysAsync = ref2.watch(bookmarkKeysProvider);
+                          final isBookmarked = keysAsync.whenOrNull(
+                                data: (keys) =>
+                                    keys.contains('$surahNumber:$verseNumber'),
+                              ) ??
+                              false;
+                          return IconButton(
+                            onPressed: () async {
+                              final repo = ref2.read(quranRepositoryProvider);
+                              if (isBookmarked) {
+                                await repo.removeBookmark(
+                                    surahNumber, verseNumber);
+                              } else {
+                                await repo.addBookmark(
+                                    surahNumber, verseNumber);
+                              }
+                              ref2.invalidate(bookmarkKeysProvider);
+                              ref2.invalidate(allBookmarksProvider);
+                            },
+                            icon: Icon(
+                              isBookmarked
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_border,
+                              color: isBookmarked
+                                  ? colors.gold
+                                  : colors.textSecondary,
+                              size: 22,
+                            ),
+                          );
                         },
-                        icon: Icon(
-                          Icons.bookmark_border,
-                          color: colors.textSecondary,
-                          size: 22,
-                        ),
                       ),
                       IconButton(
                         onPressed: () {
@@ -565,7 +654,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
                       Expanded(
                         child: GestureDetector(
                           onTap: () => _switchTab(_kQuranTab),
-                          child: Container(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutCubic,
                             padding:
                                 const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
@@ -575,12 +666,27 @@ class _AppShellState extends ConsumerState<_AppShell> {
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(18),
                             ),
-                            child: Icon(
-                              Icons.auto_stories_rounded,
-                              color: _activeTab == _kQuranTab
-                                  ? colors.gold
-                                  : colors.textSecondary,
-                              size: 24,
+                            child: TweenAnimationBuilder<Color?>(
+                              tween: ColorTween(
+                                end: _activeTab == _kQuranTab
+                                    ? colors.gold
+                                    : colors.textSecondary,
+                              ),
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, color, _) =>
+                                  AnimatedScale(
+                                scale:
+                                    _activeTab == _kQuranTab ? 1.1 : 1.0,
+                                duration:
+                                    const Duration(milliseconds: 300),
+                                curve: Curves.easeOutCubic,
+                                child: Icon(
+                                  Icons.auto_stories_rounded,
+                                  color: color,
+                                  size: 24,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -1085,19 +1191,38 @@ class _BarIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Opacity(
+    final activeColor = colors.gold;
+    final inactiveColor = colors.textSecondary;
+    return AnimatedOpacity(
       opacity: enabled ? 1.0 : 0.3,
+      duration: const Duration(milliseconds: 200),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: enabled ? onTap : null,
           borderRadius: BorderRadius.circular(16),
-          child: Padding(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
             padding: const EdgeInsets.all(12),
-            child: Icon(
-              icon,
-              color: isActive ? colors.gold : colors.textSecondary,
-              size: 22,
+            decoration: BoxDecoration(
+              color: isActive
+                  ? activeColor.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TweenAnimationBuilder<Color?>(
+              tween: ColorTween(
+                end: isActive ? activeColor : inactiveColor,
+              ),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              builder: (context, color, _) => AnimatedScale(
+                scale: isActive ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                child: Icon(icon, color: color, size: 22),
+              ),
             ),
           ),
         ),

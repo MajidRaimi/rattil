@@ -9,7 +9,8 @@
   "search_translations": "Pretraži prijevode...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Pretraži Kur'an",
-  "search_hint": "Pretraži engleske prijevode",
+  "search_hint": "By surah name or Arabic text",
+  "try_different_search": "Try a different search term",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Dodirnite ikonu oznake dok čitate",
   "ayah": "Ajet",
   "ayahs": "Ajeti",
+  "makkah": "Mekka",
+  "madinah": "Medina",
   "error_loading_bookmarks": "Greška pri učitavanju oznaka",
   "error_loading_surah": "Greška pri učitavanju sure",
   "error_loading_reciters": "Greška pri učitavanju učača",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

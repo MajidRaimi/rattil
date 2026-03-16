@@ -9,7 +9,8 @@
   "search_translations": "لە وەرگێڕانەکان بگەڕێ...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "لە قورئان بگەڕێ",
-  "search_hint": "لە وەرگێڕانە ئینگلیزییەکان بگەڕێ",
+  "search_hint": "By surah name or Arabic text",
+  "try_different_search": "Try a different search term",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "لە کاتی خوێندنەوە لە نیشانەی نیشانەکردن بپەنجە بدە",
   "ayah": "ئایە",
   "ayahs": "ئایەتەکان",
+  "makkah": "مەككی",
+  "madinah": "مەدەنی",
   "error_loading_bookmarks": "هەڵە لە بارکردنی نیشانەکان",
   "error_loading_surah": "هەڵە لە بارکردنی سوورە",
   "error_loading_reciters": "بارکردنی قاریەکان سەرکەوتوو نەبوو",
@@ -86,5 +89,8 @@
   "tafsir_381": "تەفسیری فەتحول مەجید",
   "tafsir_804": "تەفسیری ڕێبەر",
   "tafsir_817": "تەزکیرول قورئان",
-  "tafsir_818": "تەزکیر ئول قورئان (ئوردوو)"
+  "tafsir_818": "تەزکیر ئول قورئان (ئوردوو)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

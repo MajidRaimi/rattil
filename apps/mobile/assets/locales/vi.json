@@ -9,7 +9,8 @@
   "search_translations": "Tìm bản dịch...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Tìm trong Kinh Quran",
-  "search_hint": "Tìm bản dịch tiếng Anh",
+  "search_hint": "By surah name or Arabic text",
+  "try_different_search": "Try a different search term",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Nhấn biểu tượng dấu trang khi đang đọc",
   "ayah": "Ayah",
   "ayahs": "Ayah",
+  "makkah": "Makkah",
+  "madinah": "Madinah",
   "error_loading_bookmarks": "Lỗi khi tải dấu trang",
   "error_loading_surah": "Lỗi khi tải surah",
   "error_loading_reciters": "Không thể tải danh sách người đọc",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

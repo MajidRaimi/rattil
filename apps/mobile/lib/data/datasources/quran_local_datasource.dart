@@ -149,18 +149,6 @@ class QuranLocalDatasource {
 
   // Search
 
-  String _sanitizeFtsQuery(String query) {
-    // Remove FTS5 special characters that can cause syntax errors
-    final sanitized = query.replaceAll(RegExp(r'["\(\)\*\+\-\^:]'), ' ').trim();
-    if (sanitized.isEmpty) return '""';
-    // Wrap each word with * for prefix matching
-    return sanitized
-        .split(RegExp(r'\s+'))
-        .where((w) => w.isNotEmpty)
-        .map((w) => '$w*')
-        .join(' ');
-  }
-
   SearchResultItem _rowToSearchResult(Map<String, dynamic> row) {
     return SearchResultItem(
       surahNumber: row['surah_number'] as int,
@@ -172,35 +160,26 @@ class QuranLocalDatasource {
     );
   }
 
-  Future<List<SearchResultItem>> searchTranslations(String query) async {
-    final db = await database;
-    final ftsQuery = _sanitizeFtsQuery(query);
-    final results = await db.rawQuery('''
-      SELECT a.surah_number, a.ayah_number, a.text_uthmani, t.text as translation,
-             s.name_arabic, s.name_english
-      FROM translations_fts fts
-      JOIN translations t ON t.id = fts.rowid
-      JOIN ayahs a ON a.surah_number = t.surah_number AND a.ayah_number = t.ayah_number
-      JOIN surahs s ON s.number = a.surah_number
-      WHERE translations_fts MATCH ?
-      LIMIT 50
-    ''', [ftsQuery]);
-    return results.map(_rowToSearchResult).toList();
-  }
-
   Future<List<SearchResultItem>> searchArabic(String query) async {
     final db = await database;
-    final ftsQuery = _sanitizeFtsQuery(query);
+    // Strip diacritics so bare text matches against text_simple
+    final cleaned = query
+        .replaceAll(RegExp(r'[\u064B-\u065F\u0610-\u061A\u0670\u06D6-\u06ED]'), '')
+        .trim();
+    if (cleaned.isEmpty) return [];
     final results = await db.rawQuery('''
-      SELECT a.surah_number, a.ayah_number, a.text_uthmani, a.text_simple,
+      SELECT a.surah_number, a.ayah_number, a.text_uthmani,
              t.text as translation, s.name_arabic, s.name_english
-      FROM ayahs_fts fts
-      JOIN ayahs a ON a.id = fts.rowid
+      FROM ayahs a
       JOIN surahs s ON s.number = a.surah_number
       LEFT JOIN translations t ON t.surah_number = a.surah_number AND t.ayah_number = a.ayah_number
-      WHERE ayahs_fts MATCH ?
+      WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+        a.text_simple,
+        char(1611),''), char(1612),''), char(1613),''), char(1614),''),
+        char(1615),''), char(1616),''), char(1617),''), char(1618),''),
+        char(1648),'') LIKE ?
       LIMIT 50
-    ''', [ftsQuery]);
+    ''', ['%$cleaned%']);
     return results.map(_rowToSearchResult).toList();
   }
 }

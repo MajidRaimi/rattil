@@ -9,7 +9,8 @@
   "search_translations": "Rechercher dans les traductions...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Rechercher dans le Coran",
-  "search_hint": "Rechercher dans les traductions anglaises",
+  "search_hint": "Par nom de sourate ou texte arabe",
+  "try_different_search": "Essayez un autre terme",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Appuyez sur l'icône de signet pendant la lecture",
   "ayah": "Ayah",
   "ayahs": "Ayahs",
+  "makkah": "La Mecque",
+  "madinah": "Médine",
   "error_loading_bookmarks": "Erreur lors du chargement des signets",
   "error_loading_surah": "Erreur lors du chargement de la sourate",
   "error_loading_reciters": "Échec du chargement des récitateurs",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/router/app_router.dart';
 import '../../../core/theme/typography_ext.dart';
 import '../../../providers/quran_providers.dart';
 
@@ -35,10 +33,11 @@ class LastReadCard extends ConsumerWidget {
             onTap: () {
               final progress = progressAsync.valueOrNull;
               if (progress != null) {
-                context.push(AppRouter.readerPath(
-                  progress['surah_number']!,
-                  ayah: progress['ayah_number']!,
-                ));
+                ref.read(readerNavigationProvider.notifier).state =
+                    ReaderNavigationRequest(
+                  surahNumber: progress['surah_number']!,
+                  ayahNumber: progress['ayah_number']!,
+                );
               }
             },
             child: Padding(

@@ -9,7 +9,8 @@
   "search_translations": "Поиск в переводах...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Поиск по Корану",
-  "search_hint": "Поиск в английских переводах",
+  "search_hint": "По названию суры или арабскому тексту",
+  "try_different_search": "Попробуйте другой запрос",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Нажмите на значок закладки во время чтения",
   "ayah": "Аят",
   "ayahs": "Аяты",
+  "makkah": "Мекка",
+  "madinah": "Медина",
   "error_loading_bookmarks": "Ошибка загрузки закладок",
   "error_loading_surah": "Ошибка загрузки суры",
   "error_loading_reciters": "Не удалось загрузить чтецов",
@@ -86,5 +89,8 @@
   "tafsir_381": "Тафсир Фатхуль Маджид",
   "tafsir_804": "Ребар курдский тафсир",
   "tafsir_817": "Тазкируль Куран",
-  "tafsir_818": "Тазкир уль-Куран (урду)"
+  "tafsir_818": "Тазкир уль-Куран (урду)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

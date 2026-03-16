@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../core/router/app_router.dart';
 import '../../core/theme/typography_ext.dart';
+import '../../core/utils/quranic_text.dart';
 import '../../providers/quran_providers.dart';
 
-class BookmarksScreen extends ConsumerWidget {
+class BookmarksScreen extends ConsumerStatefulWidget {
   const BookmarksScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BookmarksScreen> createState() => _BookmarksScreenState();
+}
+
+class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
+  @override
+  Widget build(BuildContext context) {
     final bookmarksAsync = ref.watch(allBookmarksProvider);
     final typo = context.typography;
     final colors = context.colors;
@@ -20,10 +24,18 @@ class BookmarksScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 24),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: LocaleText('bookmarks', style: typo.headlineMedium),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                Locales.string(context, 'bookmarks'),
+                style: typo.headlineMedium.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
+            const SizedBox(height: 16),
             Expanded(
               child: bookmarksAsync.when(
                 data: (bookmarks) {
@@ -33,51 +45,57 @@ class BookmarksScreen extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.bookmark_border,
-                              size: 64,
-                              color: colors.textTertiary.withValues(alpha: 0.3)),
+                              size: 56,
+                              color: colors.textTertiary
+                                  .withValues(alpha: 0.3)),
                           const SizedBox(height: 16),
                           LocaleText(
                             'no_bookmarks_yet',
-                            style: typo.bodyLarge
+                            style: typo.titleMedium
                                 .copyWith(color: colors.textTertiary),
                           ),
-                          const SizedBox(height: 4),
-                          LocaleText('tap_bookmark_hint', style: typo.bodySmall),
+                          const SizedBox(height: 6),
+                          LocaleText(
+                            'tap_bookmark_hint',
+                            style: typo.bodySmall.copyWith(
+                              color: colors.textTertiary
+                                  .withValues(alpha: 0.6),
+                            ),
+                          ),
                         ],
                       ),
                     );
                   }
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: bookmarks.length,
-                    separatorBuilder: (_, __) =>
-                        Divider(height: 1, indent: 20, endIndent: 20, color: colors.divider),
-                    itemBuilder: (context, index) {
-                      final b = bookmarks[index];
-                      return _BookmarkTile(
-                        surahNumber: b['surah_number'] as int,
-                        ayahNumber: b['ayah_number'] as int,
-                        nameEnglish: b['name_english'] as String,
-                        nameArabic: b['name_arabic'] as String,
-                        textUthmani: b['text_uthmani'] as String,
-                        onTap: () => context.push(
-                          AppRouter.readerPath(
-                            b['surah_number'] as int,
-                            ayah: b['ayah_number'] as int,
-                          ),
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 8),
+                    children: [
+                      _SectionHeader(
+                        titleKey: 'bookmarks_section',
+                        count: bookmarks.length,
+                      ),
+                      for (int i = 0; i < bookmarks.length; i++) ...[
+                        _BookmarkCard(
+                          bookmark: bookmarks[i],
+                          onTap: () {
+                            ref
+                                .read(readerNavigationProvider.notifier)
+                                .state = ReaderNavigationRequest(
+                              surahNumber:
+                                  bookmarks[i]['surah_number'] as int,
+                              ayahNumber:
+                                  bookmarks[i]['ayah_number'] as int,
+                              highlight: true,
+                            );
+                          },
+                          onDismissed: () =>
+                              _removeBookmark(bookmarks[i]),
                         ),
-                        onDismissed: () async {
-                          await ref
-                              .read(quranRepositoryProvider)
-                              .removeBookmark(
-                                b['surah_number'] as int,
-                                b['ayah_number'] as int,
-                              );
-                          ref.invalidate(allBookmarksProvider);
-                          ref.invalidate(bookmarkKeysProvider);
-                        },
-                      );
-                    },
+                        if (i < bookmarks.length - 1)
+                          const SizedBox(height: 10),
+                      ],
+                      const SizedBox(height: 32),
+                    ],
                   );
                 },
                 loading: () => Center(
@@ -94,23 +112,86 @@ class BookmarksScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _removeBookmark(Map<String, dynamic> bookmark) {
+    final surahNumber = bookmark['surah_number'] as int;
+    final ayahNumber = bookmark['ayah_number'] as int;
+
+    ref.read(quranRepositoryProvider).removeBookmark(surahNumber, ayahNumber);
+    ref.invalidate(allBookmarksProvider);
+    ref.invalidate(bookmarkKeysProvider);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(Locales.string(context, 'bookmark_removed')),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: Locales.string(context, 'undo'),
+          onPressed: () {
+            ref
+                .read(quranRepositoryProvider)
+                .addBookmark(surahNumber, ayahNumber);
+            ref.invalidate(allBookmarksProvider);
+            ref.invalidate(bookmarkKeysProvider);
+          },
+        ),
+      ),
+    );
+  }
 }
 
-class _BookmarkTile extends StatelessWidget {
-  final int surahNumber;
-  final int ayahNumber;
-  final String nameEnglish;
-  final String nameArabic;
-  final String textUthmani;
+class _SectionHeader extends StatelessWidget {
+  final String titleKey;
+  final int count;
+
+  const _SectionHeader({required this.titleKey, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
+      child: Row(
+        children: [
+          Text(
+            Locales.string(context, titleKey).toUpperCase(),
+            style: typo.bodySmall.copyWith(
+              color: colors.goldDim,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: colors.goldDim.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$count',
+              style: typo.bodySmall.copyWith(
+                color: colors.goldDim,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BookmarkCard extends StatelessWidget {
+  final Map<String, dynamic> bookmark;
   final VoidCallback onTap;
   final VoidCallback onDismissed;
 
-  const _BookmarkTile({
-    required this.surahNumber,
-    required this.ayahNumber,
-    required this.nameEnglish,
-    required this.nameArabic,
-    required this.textUthmani,
+  const _BookmarkCard({
+    required this.bookmark,
     required this.onTap,
     required this.onDismissed,
   });
@@ -119,6 +200,16 @@ class _BookmarkTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final typo = context.typography;
     final colors = context.colors;
+    final isArabic =
+        Locales.currentLocale(context)?.languageCode == 'ar';
+
+    final surahNumber = bookmark['surah_number'] as int;
+    final ayahNumber = bookmark['ayah_number'] as int;
+    final nameEnglish = bookmark['name_english'] as String;
+    final nameArabic = bookmark['name_arabic'] as String;
+    final textUthmani = bookmark['text_uthmani'] as String;
+    final translation = bookmark['translation'] as String?;
+
     return Dismissible(
       key: ValueKey('$surahNumber:$ayahNumber'),
       direction: DismissDirection.endToStart,
@@ -126,42 +217,93 @@ class _BookmarkTile extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: colors.error.withValues(alpha: 0.2),
+        decoration: BoxDecoration(
+          color: colors.error.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Icon(Icons.delete_outline, color: colors.error),
       ),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.bookmark, color: colors.gold, size: 18),
-                  const SizedBox(width: 8),
-                  Text(nameEnglish, style: typo.titleMedium.copyWith(fontSize: 14)),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${Locales.string(context, 'ayah')} $ayahNumber',
-                    style: typo.bodySmall.copyWith(color: colors.goldDim),
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row: badge + surah name + Arabic corner
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colors.gold.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$surahNumber:$ayahNumber',
+                        style: typo.bodySmall.copyWith(
+                          color: colors.gold,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isArabic ? nameArabic : nameEnglish,
+                        style: typo.bodyMedium.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (!isArabic)
+                      Text(
+                        nameArabic,
+                        style: typo.arabicDisplayBody.copyWith(
+                          fontSize: 14,
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Arabic text (stripped of quranic marks)
+                SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    stripQuranicMarks(textUthmani),
+                    style: typo.quranArabic
+                        .copyWith(fontSize: 20, height: 1.8),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textDirection: TextDirection.rtl,
                   ),
-                  const Spacer(),
+                ),
+                // Translation preview
+                if (translation != null && translation.isNotEmpty) ...[
+                  const SizedBox(height: 6),
                   Text(
-                    nameArabic,
-                    style: typo.arabicDisplayBody.copyWith(fontSize: 16),
+                    translation,
+                    style: typo.bodySmall.copyWith(
+                      color: colors.textTertiary,
+                      height: 1.4,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                textUthmani,
-                style: typo.quranArabic.copyWith(fontSize: 18, height: 1.6),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textDirection: TextDirection.rtl,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

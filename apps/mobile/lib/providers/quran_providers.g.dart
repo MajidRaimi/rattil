@@ -366,7 +366,7 @@ final allBookmarksProvider =
 // ignore: unused_element
 typedef AllBookmarksRef =
     AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
-String _$searchResultsHash() => r'a67aee25e0f16cd9c33d7b59379d9205c1ca6ab1';
+String _$searchResultsHash() => r'e7732f45dcf7c7171c17bbad219310b81b5d818e';
 
 /// See also [searchResults].
 @ProviderFor(searchResults)

@@ -9,7 +9,8 @@
   "search_translations": "Meallerde ara...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Kur'an'da Ara",
-  "search_hint": "İngilizce meallerde ara",
+  "search_hint": "Sure adı veya Arapça metin ile",
+  "try_different_search": "Farklı bir arama terimi deneyin",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Okurken yer imi simgesine dokunun",
   "ayah": "Ayet",
   "ayahs": "Ayet",
+  "makkah": "Mekke",
+  "madinah": "Medine",
   "error_loading_bookmarks": "Yer imleri yüklenirken hata oluştu",
   "error_loading_surah": "Sure yüklenirken hata oluştu",
   "error_loading_reciters": "Hafızlar yüklenemedi",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

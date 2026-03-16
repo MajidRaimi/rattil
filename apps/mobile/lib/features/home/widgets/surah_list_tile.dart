@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/router/app_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/typography_ext.dart';
 import '../../../data/models/surah.dart';
+import '../../../providers/quran_providers.dart';
 
-class SurahListTile extends StatelessWidget {
+class SurahListTile extends ConsumerWidget {
   final Surah surah;
 
   const SurahListTile({super.key, required this.surah});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final typo = context.typography;
     final colors = context.colors;
     return InkWell(
-      onTap: () => context.push(AppRouter.readerPath(surah.number)),
+      onTap: () {
+        ref.read(readerNavigationProvider.notifier).state =
+            ReaderNavigationRequest(
+          surahNumber: surah.number,
+          ayahNumber: 1,
+        );
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(

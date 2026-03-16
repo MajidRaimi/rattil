@@ -9,7 +9,8 @@
   "search_translations": "Wut tekki yi...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Wut ci Xuraan bi",
-  "search_hint": "Wut tekki yi ci Angale",
+  "search_hint": "By surah name or Arabic text",
+  "try_different_search": "Try a different search term",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Beccal xarnu bi bu ngay jang",
   "ayah": "Aaya",
   "ayahs": "Aaya yi",
+  "makkah": "Makkah",
+  "madinah": "Madinah",
   "error_loading_bookmarks": "Njumte ci yeb xarnu yi",
   "error_loading_surah": "Njumte ci yeb surat bi",
   "error_loading_reciters": "Jàngalekat yi jotuwuñu",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

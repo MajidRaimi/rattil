@@ -9,7 +9,8 @@
   "search_translations": "Tafuta tafsiri...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Tafuta katika Qurani",
-  "search_hint": "Tafuta tafsiri za Kiingereza",
+  "search_hint": "By surah name or Arabic text",
+  "try_different_search": "Try a different search term",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Gusa ikoni ya alama wakati unasoma",
   "ayah": "Aya",
   "ayahs": "Aya",
+  "makkah": "Makka",
+  "madinah": "Madina",
   "error_loading_bookmarks": "Hitilafu kupakia alama za kurasa",
   "error_loading_surah": "Hitilafu kupakia sura",
   "error_loading_reciters": "Imeshindwa kupakia wasomaji",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }

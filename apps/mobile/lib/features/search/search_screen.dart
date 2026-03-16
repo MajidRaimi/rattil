@@ -2,12 +2,75 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import '../../core/router/app_router.dart';
 import '../../core/theme/typography_ext.dart';
+import '../../core/utils/quranic_text.dart';
 import '../../data/models/search_result.dart';
 import '../../data/models/surah.dart';
 import '../../providers/quran_providers.dart';
+
+// Characters to strip for matching: diacritics + tatweel.
+final _matchStrip = RegExp(r'[\u064B-\u065F\u0610-\u061A\u0640\u0670]');
+
+/// Normalize Uthmanic-specific base characters for matching.
+/// Alef wasla (ٱ U+0671) → regular alef (ا U+0627).
+String _normalizeForMatch(String s) {
+  return s.replaceAll(_matchStrip, '').replaceAll('\u0671', '\u0627');
+}
+
+/// Builds highlighted [TextSpan]s for [text] where [query] matches,
+/// accounting for Arabic diacritics and Uthmanic characters.
+List<TextSpan> _highlightMatches(
+  String text,
+  String query,
+  TextStyle baseStyle,
+  Color highlightBg,
+) {
+  if (query.isEmpty) return [TextSpan(text: text, style: baseStyle)];
+
+  final strippedText = _normalizeForMatch(text);
+  final strippedQuery = _normalizeForMatch(
+    query.replaceAll(quranicMarks, ''),
+  );
+
+  if (strippedQuery.isEmpty) return [TextSpan(text: text, style: baseStyle)];
+
+  // Map each stripped-text index to its position in the original text.
+  final posMap = <int>[];
+  for (int i = 0; i < text.length; i++) {
+    if (!_matchStrip.hasMatch(text[i])) {
+      posMap.add(i);
+    }
+  }
+
+  // Find all non-overlapping matches in stripped text.
+  final highlightStyle = baseStyle.copyWith(backgroundColor: highlightBg);
+  final spans = <TextSpan>[];
+  int lastOrigEnd = 0;
+  int searchFrom = 0;
+
+  while (searchFrom <= strippedText.length - strippedQuery.length) {
+    final idx = strippedText.indexOf(strippedQuery, searchFrom);
+    if (idx == -1) break;
+
+    final origStart = posMap[idx];
+    final matchEnd = idx + strippedQuery.length;
+    final origEnd = matchEnd < posMap.length ? posMap[matchEnd] : text.length;
+
+    if (origStart > lastOrigEnd) {
+      spans.add(TextSpan(text: text.substring(lastOrigEnd, origStart), style: baseStyle));
+    }
+    spans.add(TextSpan(text: text.substring(origStart, origEnd), style: highlightStyle));
+
+    lastOrigEnd = origEnd;
+    searchFrom = matchEnd;
+  }
+
+  if (lastOrigEnd < text.length) {
+    spans.add(TextSpan(text: text.substring(lastOrigEnd), style: baseStyle));
+  }
+
+  return spans.isEmpty ? [TextSpan(text: text, style: baseStyle)] : spans;
+}
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -42,20 +105,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 24),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: LocaleText('search', style: typo.headlineMedium),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                Locales.string(context, 'search'),
+                style: typo.headlineMedium.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
+            const SizedBox(height: 16),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: TextField(
                 controller: _controller,
                 onChanged: _onChanged,
                 style: typo.bodyLarge.copyWith(color: colors.textPrimary),
                 decoration: InputDecoration(
                   hintText: Locales.string(context, 'search_quran_hint'),
-                  hintStyle: typo.bodyLarge,
+                  hintStyle: typo.bodyLarge.copyWith(color: colors.textTertiary),
                   prefixIcon: Icon(Icons.search, color: colors.textTertiary),
                   suffixIcon: _controller.text.isNotEmpty
                       ? IconButton(
@@ -69,14 +141,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   filled: true,
                   fillColor: colors.surface,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
-            if (_query.isNotEmpty) _buildModeChip(),
+            const SizedBox(height: 8),
             Expanded(child: _buildResults()),
           ],
         ),
@@ -84,59 +156,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildModeChip() {
-    final colors = context.colors;
-    final typo = context.typography;
-    final resultsAsync = ref.watch(searchResultsProvider(_query));
-
-    return resultsAsync.when(
-      data: (state) {
-        final label = state.isArabicMode
-            ? Locales.string(context, 'searching_arabic')
-            : Locales.string(context, 'searching_translations');
-        final icon = state.isArabicMode
-            ? Icons.text_fields
-            : Icons.translate;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 14, color: colors.textSecondary),
-                const SizedBox(width: 6),
-                Text(label, style: typo.bodySmall.copyWith(color: colors.textSecondary)),
-              ],
-            ),
-          ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
   Widget _buildResults() {
     final typo = context.typography;
     final colors = context.colors;
+
     if (_query.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search, size: 64, color: colors.textTertiary.withValues(alpha: 0.3)),
+            Icon(Icons.search, size: 56, color: colors.textTertiary.withValues(alpha: 0.3)),
             const SizedBox(height: 16),
             LocaleText(
               'search_the_quran',
-              style: typo.bodyLarge.copyWith(color: colors.textTertiary),
+              style: typo.titleMedium.copyWith(color: colors.textTertiary),
             ),
-            const SizedBox(height: 4),
-            LocaleText('search_hint', style: typo.bodySmall),
+            const SizedBox(height: 6),
+            LocaleText(
+              'search_hint',
+              style: typo.bodySmall.copyWith(color: colors.textTertiary.withValues(alpha: 0.6)),
+            ),
           ],
         ),
       );
@@ -148,57 +187,96 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       data: (state) {
         if (state.isEmpty) {
           return Center(
-            child: Text(
-              '${Locales.string(context, 'no_results_for')} "$_query"',
-              style: typo.bodyLarge,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.search_off, size: 56, color: colors.textTertiary.withValues(alpha: 0.3)),
+                const SizedBox(height: 16),
+                Text(
+                  '${Locales.string(context, 'no_results_for')} "$_query"',
+                  style: typo.titleMedium.copyWith(color: colors.textTertiary),
+                ),
+                const SizedBox(height: 6),
+                LocaleText(
+                  'try_different_search',
+                  style: typo.bodySmall.copyWith(color: colors.textTertiary.withValues(alpha: 0.6)),
+                ),
+              ],
             ),
           );
         }
-        return CustomScrollView(
-          slivers: [
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          children: [
+            // Surah matches section
             if (state.surahMatches.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: _SectionHeader(
-                  title: Locales.string(context, 'surahs_section'),
-                  count: state.surahMatches.length,
-                ),
+              _SectionHeader(
+                titleKey: 'surahs_section',
+                count: state.surahMatches.length,
               ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final surah = state.surahMatches[index];
-                    return _SurahSearchResultTile(
-                      surah: surah,
-                      onTap: () => context.push(AppRouter.readerPath(surah.number)),
-                    );
-                  },
-                  childCount: state.surahMatches.length,
+              Container(
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ),
-            ],
-            if (state.ayahMatches.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: _SectionHeader(
-                  title: Locales.string(context, 'ayahs_section'),
-                  count: state.ayahMatches.length,
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final r = state.ayahMatches[index];
-                    return _AyahSearchResultTile(
-                      result: r,
-                      isArabicMode: state.isArabicMode,
-                      onTap: () => context.push(
-                        AppRouter.readerPath(r.surahNumber, ayah: r.ayahNumber),
+                child: Column(
+                  children: [
+                    for (int i = 0; i < state.surahMatches.length; i++) ...[
+                      _SurahSearchResultTile(
+                        surah: state.surahMatches[i],
+                        onTap: () {
+                          ref.read(readerNavigationProvider.notifier).state =
+                              ReaderNavigationRequest(
+                            surahNumber: state.surahMatches[i].number,
+                            ayahNumber: 1,
+                          );
+                        },
                       ),
-                    );
-                  },
-                  childCount: state.ayahMatches.length,
+                      if (i < state.surahMatches.length - 1)
+                        Divider(
+                          height: 1,
+                          indent: 56,
+                          endIndent: 16,
+                          color: colors.divider,
+                        ),
+                    ],
+                  ],
                 ),
               ),
+              const SizedBox(height: 20),
             ],
+
+            // Ayah matches section
+            if (state.ayahMatches.isNotEmpty) ...[
+              _SectionHeader(
+                titleKey: 'ayahs_section',
+                count: state.ayahMatches.length,
+              ),
+              for (int i = 0; i < state.ayahMatches.length; i++) ...[
+                Container(
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: _AyahSearchResultTile(
+                    result: state.ayahMatches[i],
+                    query: _query,
+                    onTap: () {
+                      ref.read(readerNavigationProvider.notifier).state =
+                          ReaderNavigationRequest(
+                        surahNumber: state.ayahMatches[i].surahNumber,
+                        ayahNumber: state.ayahMatches[i].ayahNumber,
+                        highlight: true,
+                      );
+                    },
+                  ),
+                ),
+                if (i < state.ayahMatches.length - 1)
+                  const SizedBox(height: 10),
+              ],
+            ],
+            const SizedBox(height: 32),
           ],
         );
       },
@@ -213,41 +291,43 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 }
 
 class _SectionHeader extends StatelessWidget {
-  final String title;
+  final String titleKey;
   final int count;
 
-  const _SectionHeader({required this.title, required this.count});
+  const _SectionHeader({required this.titleKey, required this.count});
 
   @override
   Widget build(BuildContext context) {
     final typo = context.typography;
     final colors = context.colors;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-      child: Column(
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 8),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Text(
-                title.toUpperCase(),
-                style: typo.labelMedium.copyWith(color: colors.gold),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  style: typo.bodySmall.copyWith(color: colors.textSecondary, fontSize: 11),
-                ),
-              ),
-            ],
+          Text(
+            Locales.string(context, titleKey).toUpperCase(),
+            style: typo.bodySmall.copyWith(
+              color: colors.goldDim,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 6),
-          Divider(height: 1, color: colors.divider),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: colors.goldDim.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$count',
+              style: typo.bodySmall.copyWith(
+                color: colors.goldDim,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -264,60 +344,63 @@ class _SurahSearchResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final typo = context.typography;
     final colors = context.colors;
+    final isArabic =
+        Locales.currentLocale(context)?.languageCode == 'ar';
+
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Transform.rotate(
-                    angle: 0.785398,
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: colors.gold, width: 1.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '${surah.number}',
-                    style: typo.bodySmall.copyWith(
-                      color: colors.gold,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+            // Number badge
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: colors.gold.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${surah.number}',
+                style: typo.bodyMedium.copyWith(
+                  color: colors.gold,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 10),
+            // Name and meta
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(surah.nameEnglish, style: typo.titleMedium),
+                  Text(
+                    isArabic ? surah.nameArabic : surah.nameEnglish,
+                    style: typo.bodyLarge.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
-                    '${surah.revelationType.toUpperCase()} • ${surah.ayahCount} Ayahs',
-                    style: typo.bodySmall,
+                    '${Locales.string(context, surah.revelationType)} \u2022 ${surah.ayahCount} ${Locales.string(context, 'ayahs')}',
+                    style: typo.bodySmall.copyWith(color: colors.textTertiary),
                   ),
                 ],
               ),
             ),
-            Text(
-              surah.nameArabic,
-              style: typo.arabicDisplay.copyWith(
-                color: colors.textPrimary,
-                fontSize: 20,
+            // Arabic name (only in non-Arabic locales)
+            if (!isArabic)
+              Text(
+                surah.nameArabic,
+                style: typo.arabicDisplayBody.copyWith(
+                  fontSize: 14,
+                  color: colors.textTertiary,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -327,12 +410,12 @@ class _SurahSearchResultTile extends StatelessWidget {
 
 class _AyahSearchResultTile extends StatelessWidget {
   final SearchResultItem result;
-  final bool isArabicMode;
+  final String query;
   final VoidCallback onTap;
 
   const _AyahSearchResultTile({
     required this.result,
-    required this.isArabicMode,
+    required this.query,
     required this.onTap,
   });
 
@@ -342,76 +425,85 @@ class _AyahSearchResultTile extends StatelessWidget {
     final colors = context.colors;
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: colors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${result.surahNumber}:${result.ayahNumber}',
-                    style: typo.bodySmall.copyWith(
-                      color: colors.gold,
-                      fontWeight: FontWeight.w600,
+            // Header row
+            Builder(builder: (context) {
+              final isArabic =
+                  Locales.currentLocale(context)?.languageCode == 'ar';
+              return Row(
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colors.gold.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${result.surahNumber}:${result.ayahNumber}',
+                      style: typo.bodySmall.copyWith(
+                        color: colors.gold,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isArabic ? result.nameArabic : result.nameEnglish,
+                      style: typo.bodyMedium.copyWith(
+                        color: colors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  if (!isArabic)
+                    Text(
+                      result.nameArabic,
+                      style: typo.arabicDisplayBody.copyWith(
+                        fontSize: 14,
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                ],
+              );
+            }),
+            const SizedBox(height: 10),
+            // Arabic text with query highlighting
+            SizedBox(
+              width: double.infinity,
+              child: RichText(
+                text: TextSpan(
+                  children: _highlightMatches(
+                    result.textUthmani.replaceAll(quranicMarks, ''),
+                    query,
+                    typo.quranArabic.copyWith(fontSize: 20, height: 1.8),
+                    colors.gold.withValues(alpha: 0.15),
+                  ),
                 ),
-                const SizedBox(width: 10),
-                Text(result.nameEnglish, style: typo.titleMedium.copyWith(fontSize: 14)),
-                const Spacer(),
-                Text(
-                  result.nameArabic,
-                  style: typo.arabicDisplayBody.copyWith(fontSize: 14, color: colors.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (isArabicMode) ...[
-              Text(
-                result.textUthmani,
-                style: typo.quranArabic.copyWith(fontSize: 20, height: 1.8),
                 textDirection: TextDirection.rtl,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (result.translation != null && result.translation!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  result.translation!,
-                  style: typo.bodySmall.copyWith(height: 1.4),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+            ),
+            // Translation
+            if (result.translation != null && result.translation!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                result.translation!,
+                style: typo.bodySmall.copyWith(
+                  color: colors.textTertiary,
+                  height: 1.4,
                 ),
-              ],
-            ] else ...[
-              if (result.translation != null && result.translation!.isNotEmpty)
-                Text(
-                  result.translation!,
-                  style: typo.bodyMedium.copyWith(height: 1.5),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              if (result.textUthmani.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  result.textUthmani,
-                  style: typo.quranArabic.copyWith(
-                    fontSize: 14,
-                    color: colors.textTertiary,
-                    height: 1.6,
-                  ),
-                  textDirection: TextDirection.rtl,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ],
         ),

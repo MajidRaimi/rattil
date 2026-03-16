@@ -9,7 +9,8 @@
   "search_translations": "Аудармаларды іздеу...",
   "search_quran_hint": "Search surahs, verses...",
   "search_the_quran": "Құраннан іздеу",
-  "search_hint": "Ағылшын аудармаларын іздеу",
+  "search_hint": "By surah name or Arabic text",
+  "try_different_search": "Try a different search term",
   "surahs_section": "Surahs",
   "ayahs_section": "Ayahs",
   "searching_arabic": "Arabic text",
@@ -20,6 +21,8 @@
   "tap_bookmark_hint": "Оқу кезінде бетбелгі белгішесін басыңыз",
   "ayah": "Аят",
   "ayahs": "Аяттар",
+  "makkah": "Мекке",
+  "madinah": "Мәдина",
   "error_loading_bookmarks": "Бетбелгілерді жүктеу қатесі",
   "error_loading_surah": "Сүрені жүктеу қатесі",
   "error_loading_reciters": "Қарилерді жүктеу сәтсіз аяқталды",
@@ -86,5 +89,8 @@
   "tafsir_381": "Tafsir Fathul Majid",
   "tafsir_804": "Rebar Kurdish Tafsir",
   "tafsir_817": "Tazkirul Quran",
-  "tafsir_818": "Tazkir ul Quran (Urdu)"
+  "tafsir_818": "Tazkir ul Quran (Urdu)",
+  "bookmark_removed": "Bookmark removed",
+  "undo": "Undo",
+  "bookmarks_section": "Bookmarks"
 }
