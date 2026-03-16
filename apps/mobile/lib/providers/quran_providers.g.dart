@@ -366,6 +366,79 @@ final allBookmarksProvider =
 // ignore: unused_element
 typedef AllBookmarksRef =
     AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
+String _$memorizedPagesHash() => r'845d797fe77decebd9b6dc447445ed0d69ed1f92';
+
+/// See also [memorizedPages].
+@ProviderFor(memorizedPages)
+final memorizedPagesProvider = AutoDisposeFutureProvider<Set<int>>.internal(
+  memorizedPages,
+  name: r'memorizedPagesProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$memorizedPagesHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef MemorizedPagesRef = AutoDisposeFutureProviderRef<Set<int>>;
+String _$juzPageRangesHash() => r'85b5fd87dea7517d409d4e5314677b20398ffbaf';
+
+/// See also [juzPageRanges].
+@ProviderFor(juzPageRanges)
+final juzPageRangesProvider =
+    AutoDisposeFutureProvider<List<Map<String, int>>>.internal(
+      juzPageRanges,
+      name: r'juzPageRangesProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$juzPageRangesHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef JuzPageRangesRef = AutoDisposeFutureProviderRef<List<Map<String, int>>>;
+String _$juzSurahPageRangesHash() =>
+    r'd905710c1312c099b43677f6a4863ace35060e23';
+
+/// See also [juzSurahPageRanges].
+@ProviderFor(juzSurahPageRanges)
+final juzSurahPageRangesProvider =
+    AutoDisposeFutureProvider<List<Map<String, dynamic>>>.internal(
+      juzSurahPageRanges,
+      name: r'juzSurahPageRangesProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$juzSurahPageRangesHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef JuzSurahPageRangesRef =
+    AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
+String _$wirdCompletedTodayHash() =>
+    r'f5b302464bfe0c788dc72b12b434497ac0132025';
+
+/// See also [wirdCompletedToday].
+@ProviderFor(wirdCompletedToday)
+final wirdCompletedTodayProvider = AutoDisposeFutureProvider<bool>.internal(
+  wirdCompletedToday,
+  name: r'wirdCompletedTodayProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$wirdCompletedTodayHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef WirdCompletedTodayRef = AutoDisposeFutureProviderRef<bool>;
 String _$searchResultsHash() => r'e7732f45dcf7c7171c17bbad219310b81b5d818e';
 
 /// See also [searchResults].

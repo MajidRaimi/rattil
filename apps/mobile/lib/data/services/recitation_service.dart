@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ReciterInfo {
   final String id;
@@ -18,6 +21,21 @@ class RecitationService {
 
   final _cache = <String, List<ReciterInfo>>{};
 
+  /// In-memory map of already-resolved local file paths.
+  /// Key: "{surah}_{verse}_{reciterId}"
+  final _fileCache = <String, String>{};
+
+  String? _tikrarDirPath;
+
+  Future<String> get _tikrarDir async {
+    if (_tikrarDirPath != null) return _tikrarDirPath!;
+    final cacheDir = await getApplicationCacheDirectory();
+    final dir = Directory('${cacheDir.path}/tikrar');
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    _tikrarDirPath = dir.path;
+    return _tikrarDirPath!;
+  }
+
   Future<List<ReciterInfo>> fetchReciters(int surah, int verse) async {
     final key = '$surah:$verse';
     if (_cache.containsKey(key)) return _cache[key]!;
@@ -36,5 +54,30 @@ class RecitationService {
 
     _cache[key] = list;
     return list;
+  }
+
+  /// Downloads the MP3 for [surah]:[verse] by [reciterId] to disk.
+  /// Returns the local file path. Instant if already cached.
+  Future<String> downloadVerse({
+    required int surah,
+    required int verse,
+    required String reciterId,
+    required String url,
+  }) async {
+    final cacheKey = '${surah}_${verse}_$reciterId';
+    if (_fileCache.containsKey(cacheKey)) return _fileCache[cacheKey]!;
+
+    final dir = await _tikrarDir;
+    final filePath = '$dir/$cacheKey.mp3';
+    final file = File(filePath);
+
+    if (file.existsSync()) {
+      _fileCache[cacheKey] = filePath;
+      return filePath;
+    }
+
+    await _dio.download(url, filePath);
+    _fileCache[cacheKey] = filePath;
+    return filePath;
   }
 }

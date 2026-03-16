@@ -32,6 +32,12 @@ dependencies:
   dio: ^5.9.2
   just_audio: ^0.10.5
   animated_theme_switcher: 2.0.10
+  tab_container: ^3.5.3
+  progress_border: ^0.1.5
+  animated_flip_counter: ^0.3.4
+  flutter_local_notifications: ^19.0.0
+  flutter_timezone: ^3.0.1
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:

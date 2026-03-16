@@ -27,7 +27,25 @@ class QuranLocalDatasource {
       await File(dbPath).writeAsBytes(bytes, flush: true);
     }
 
-    return openDatabase(dbPath);
+    final db = await openDatabase(dbPath);
+
+    // Create hifz tracking table if it doesn't exist
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS hifz_pages (
+        page INTEGER PRIMARY KEY,
+        memorized_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    ''');
+
+    // Create wird completion tracking table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS wird_completions (
+        date TEXT PRIMARY KEY,
+        completed_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    ''');
+
+    return db;
   }
 
   Future<List<Surah>> getAllSurahs() async {
@@ -158,6 +176,112 @@ class QuranLocalDatasource {
       nameEnglish: row['name_english'] as String? ?? '',
       translation: row['translation'] as String?,
     );
+  }
+
+  // ── Hifz (memorization tracking) ──
+
+  Future<Set<int>> getMemorizedPages() async {
+    final db = await database;
+    final results = await db.query('hifz_pages', columns: ['page']);
+    return results.map((r) => r['page'] as int).toSet();
+  }
+
+  /// Toggles a page's memorization state. Returns `true` if now memorized.
+  Future<bool> togglePageMemorized(int page) async {
+    final db = await database;
+    final existing = await db.query(
+      'hifz_pages',
+      where: 'page = ?',
+      whereArgs: [page],
+    );
+    if (existing.isNotEmpty) {
+      await db.delete('hifz_pages', where: 'page = ?', whereArgs: [page]);
+      return false;
+    } else {
+      await db.insert('hifz_pages', {'page': page});
+      return true;
+    }
+  }
+
+  /// Bulk-sets or removes memorization for a list of pages.
+  Future<void> bulkSetMemorized(List<int> pages, bool memorized) async {
+    final db = await database;
+    final batch = db.batch();
+    if (memorized) {
+      for (final page in pages) {
+        batch.insert('hifz_pages', {'page': page},
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+      }
+    } else {
+      for (final page in pages) {
+        batch.delete('hifz_pages', where: 'page = ?', whereArgs: [page]);
+      }
+    }
+    await batch.commit(noResult: true);
+  }
+
+  /// Returns page ranges for each juz: [{juz, startPage, endPage}, ...]
+  Future<List<Map<String, int>>> getJuzPageRanges() async {
+    final db = await database;
+    final results = await db.rawQuery('''
+      SELECT juz, MIN(page) as start_page, MAX(page) as end_page
+      FROM ayahs
+      GROUP BY juz
+      ORDER BY juz
+    ''');
+    return results
+        .map((r) => {
+              'juz': r['juz'] as int,
+              'startPage': r['start_page'] as int,
+              'endPage': r['end_page'] as int,
+            })
+        .toList();
+  }
+
+  /// Returns page ranges per surah within each juz.
+  Future<List<Map<String, dynamic>>> getJuzSurahPageRanges() async {
+    final db = await database;
+    return db.rawQuery('''
+      SELECT a.juz, a.surah_number, s.name_arabic, s.name_english,
+             MIN(a.page) as start_page, MAX(a.page) as end_page
+      FROM ayahs a
+      JOIN surahs s ON s.number = a.surah_number
+      GROUP BY a.juz, a.surah_number
+      ORDER BY a.juz, MIN(a.page)
+    ''');
+  }
+
+  // Search
+
+  // ── Wird (daily reading tracking) ──
+
+  Future<bool> isWirdCompletedToday() async {
+    final db = await database;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final results = await db.query(
+      'wird_completions',
+      where: 'date = ?',
+      whereArgs: [today],
+    );
+    return results.isNotEmpty;
+  }
+
+  /// Toggles today's wird completion. Returns `true` if now completed.
+  Future<bool> toggleWirdCompletion() async {
+    final db = await database;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final existing = await db.query(
+      'wird_completions',
+      where: 'date = ?',
+      whereArgs: [today],
+    );
+    if (existing.isNotEmpty) {
+      await db.delete('wird_completions', where: 'date = ?', whereArgs: [today]);
+      return false;
+    } else {
+      await db.insert('wird_completions', {'date': today});
+      return true;
+    }
   }
 
   Future<List<SearchResultItem>> searchArabic(String query) async {

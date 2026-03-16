@@ -15,7 +15,7 @@ import '../../data/services/recitation_service.dart';
 import '../../data/services/tafseer_service.dart';
 import '../../providers/quran_providers.dart';
 import '../bookmarks/bookmarks_screen.dart';
-import '../hifz/hifz_screen.dart';
+import '../hifz/profile_screen.dart';
 import '../search/search_screen.dart';
 import '../settings/settings_screen.dart';
 
@@ -249,7 +249,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
                   const SearchScreen(),      // 0
                   const BookmarksScreen(),    // 1
                   _buildMushafView(mushafTheme), // 2 (center)
-                  const HifzScreen(),         // 3
+                  const ProfileScreen(),      // 3
                   const SettingsScreen(),     // 4
                 ],
               ),
@@ -697,10 +697,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
                         ),
                       ),
                       _BarIcon(
-                        icon: Icons.psychology_rounded,
+                        icon: Icons.person_rounded,
                         isActive: _activeTab == 3,
                         onTap: () => _switchTab(3),
-                        enabled: false,
                       ),
                       _BarIcon(
                         icon: Icons.settings_rounded,

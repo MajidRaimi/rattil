@@ -28,6 +28,21 @@ class QuranRepository {
   Future<void> removeBookmark(int surahNumber, int ayahNumber) =>
       _datasource.removeBookmark(surahNumber, ayahNumber);
 
+  // Hifz (memorization tracking)
+  Future<Set<int>> getMemorizedPages() => _datasource.getMemorizedPages();
+  Future<bool> togglePageMemorized(int page) =>
+      _datasource.togglePageMemorized(page);
+  Future<void> bulkSetMemorized(List<int> pages, bool memorized) =>
+      _datasource.bulkSetMemorized(pages, memorized);
+  Future<List<Map<String, int>>> getJuzPageRanges() =>
+      _datasource.getJuzPageRanges();
+  Future<List<Map<String, dynamic>>> getJuzSurahPageRanges() =>
+      _datasource.getJuzSurahPageRanges();
+
+  // Wird (daily reading tracking)
+  Future<bool> isWirdCompletedToday() => _datasource.isWirdCompletedToday();
+  Future<bool> toggleWirdCompletion() => _datasource.toggleWirdCompletion();
+
   // Search
   Future<List<SearchResultItem>> searchArabic(String query) =>
       _datasource.searchArabic(query);

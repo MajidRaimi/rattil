@@ -6,21 +6,23 @@ import '../../../providers/quran_providers.dart';
 
 class SurahListTile extends ConsumerWidget {
   final Surah surah;
+  final VoidCallback? onTap;
 
-  const SurahListTile({super.key, required this.surah});
+  const SurahListTile({super.key, required this.surah, this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final typo = context.typography;
     final colors = context.colors;
     return InkWell(
-      onTap: () {
-        ref.read(readerNavigationProvider.notifier).state =
-            ReaderNavigationRequest(
-          surahNumber: surah.number,
-          ayahNumber: 1,
-        );
-      },
+      onTap: onTap ??
+          () {
+            ref.read(readerNavigationProvider.notifier).state =
+                ReaderNavigationRequest(
+              surahNumber: surah.number,
+              ayahNumber: 1,
+            );
+          },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(

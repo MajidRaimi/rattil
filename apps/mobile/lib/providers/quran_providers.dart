@@ -67,6 +67,26 @@ Future<List<Map<String, dynamic>>> allBookmarks(ref) {
   return ref.watch(quranRepositoryProvider).getAllBookmarks();
 }
 
+@riverpod
+Future<Set<int>> memorizedPages(ref) {
+  return ref.watch(quranRepositoryProvider).getMemorizedPages();
+}
+
+@riverpod
+Future<List<Map<String, int>>> juzPageRanges(ref) {
+  return ref.watch(quranRepositoryProvider).getJuzPageRanges();
+}
+
+@riverpod
+Future<List<Map<String, dynamic>>> juzSurahPageRanges(ref) {
+  return ref.watch(quranRepositoryProvider).getJuzSurahPageRanges();
+}
+
+@riverpod
+Future<bool> wirdCompletedToday(ref) {
+  return ref.watch(quranRepositoryProvider).isWirdCompletedToday();
+}
+
 bool _containsArabic(String text) =>
     RegExp(r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]')
         .hasMatch(text);
