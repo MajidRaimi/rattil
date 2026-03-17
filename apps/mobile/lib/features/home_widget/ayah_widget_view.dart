@@ -22,11 +22,7 @@ class AyahWidgetView extends StatelessWidget {
       child: Container(
         width: 400,
         height: 200,
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        clipBehavior: Clip.antiAlias,
+        color: colors.surface,
         child: Column(
           children: [
             Container(height: 2.5, color: colors.gold),

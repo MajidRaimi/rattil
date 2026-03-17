@@ -56,7 +56,7 @@ class HomeWidgetService {
         ayahText: displayText,
         surahName: surahName,
         ayahNumber: ayahNumber,
-        colors: AppColorScheme.dark,
+        colors: AppColorScheme.dark.copyWith(surface: const Color(0xFF000000)),
       ),
       logicalSize: const Size(400, 200),
       pixelRatio: 5,

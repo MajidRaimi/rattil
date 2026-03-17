@@ -1,4 +1,3 @@
-import 'package:animated_theme_switcher/animated_theme_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,8 +24,7 @@ class SettingsScreen extends ConsumerWidget {
       orElse: () => supportedLanguages[1],
     );
 
-    return ThemeSwitchingArea(
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: colors.background,
         body: SafeArea(
           child: ListView(
@@ -75,7 +73,6 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
   }
 
@@ -327,20 +324,8 @@ class _ThemeChip extends ConsumerWidget {
     final colors = context.colors;
     final langCode = Locales.currentLocale(context)?.languageCode ?? 'en';
 
-    return ThemeSwitcher.withTheme(
-      builder: (context, switcher, currentTheme) {
-        return GestureDetector(
+    return GestureDetector(
           onTap: () {
-            final newTheme = switch (targetMode) {
-              ThemeMode.light => AppTheme.light(langCode),
-              ThemeMode.dark => AppTheme.dark(langCode),
-              _ => WidgetsBinding
-                          .instance.platformDispatcher.platformBrightness ==
-                      Brightness.dark
-                  ? AppTheme.dark(langCode)
-                  : AppTheme.light(langCode),
-            };
-            switcher.changeTheme(theme: newTheme);
             ref
                 .read(appThemeModeProvider.notifier)
                 .setThemeMode(targetMode);
@@ -381,8 +366,6 @@ class _ThemeChip extends ConsumerWidget {
             ),
           ),
         );
-      },
-    );
   }
 }
 

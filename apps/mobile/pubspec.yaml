@@ -22,7 +22,7 @@ dependencies:
   freezed_annotation: ^2.4.4
   quran: ^1.4.1
   imad_flutter:
-    path: ../../mushaf-imad-flutter
+    path: ../../packages/imad_flutter
   flutter_floating_bottom_bar: ^1.4.0
   flutter_screenutil: ^5.9.3
   flutter_locales: ^3.0.3
@@ -31,7 +31,6 @@ dependencies:
   quran_flutter: ^1.0.3
   dio: ^5.9.2
   just_audio: ^0.10.5
-  animated_theme_switcher: 2.0.10
   tab_container: ^3.5.3
   progress_border: ^0.1.5
   animated_flip_counter: ^0.3.4
