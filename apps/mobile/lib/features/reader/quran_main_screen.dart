@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_locales/flutter_locales.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import '../../core/utils/ordinal_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:imad_flutter/imad_flutter.dart' as imad;
@@ -74,19 +75,20 @@ class QuranMainScreen extends ConsumerWidget {
     final progressAsync = ref.watch(readingProgressProvider);
 
     return progressAsync.when(
-      data: (progress) => _AppShell(
-        initialPage: quran.getPageNumber(
-          progress['surah_number']!,
-          progress['ayah_number']!,
-        ),
-      ),
-      loading: () => Scaffold(
-        backgroundColor: colors.background,
-        body: Center(
-          child: CircularProgressIndicator(color: colors.gold),
-        ),
-      ),
-      error: (_, __) => const _AppShell(initialPage: 1),
+      data: (progress) {
+        FlutterNativeSplash.remove();
+        return _AppShell(
+          initialPage: quran.getPageNumber(
+            progress['surah_number']!,
+            progress['ayah_number']!,
+          ),
+        );
+      },
+      loading: () => Scaffold(backgroundColor: colors.background),
+      error: (_, __) {
+        FlutterNativeSplash.remove();
+        return const _AppShell(initialPage: 1);
+      },
     );
   }
 }
