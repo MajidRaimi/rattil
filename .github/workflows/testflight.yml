@@ -1,0 +1,158 @@
+name: Deploy to TestFlight
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/testflight.yml'
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: '3.38.7'
+
+jobs:
+  deploy:
+    name: Build & Upload to TestFlight
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: apps/mobile
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install Apple certificate
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          echo "$IOS_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          security import $CERTIFICATE_PATH -P "$IOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Install provisioning profiles
+        env:
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          IOS_WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+
+          # Main app profile
+          MAIN_PROFILE_PATH=$RUNNER_TEMP/main_profile.mobileprovision
+          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $MAIN_PROFILE_PATH
+
+          MAIN_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i $MAIN_PROFILE_PATH))
+          MAIN_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(/usr/bin/security cms -D -i $MAIN_PROFILE_PATH))
+          cp $MAIN_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/${MAIN_UUID}.mobileprovision
+
+          echo "MAIN_PROFILE_UUID=$MAIN_UUID" >> $GITHUB_ENV
+          echo "MAIN_PROFILE_NAME=$MAIN_NAME" >> $GITHUB_ENV
+
+          # Widget extension profile
+          WIDGET_PROFILE_PATH=$RUNNER_TEMP/widget_profile.mobileprovision
+          echo "$IOS_WIDGET_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $WIDGET_PROFILE_PATH
+
+          WIDGET_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i $WIDGET_PROFILE_PATH))
+          WIDGET_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< $(/usr/bin/security cms -D -i $WIDGET_PROFILE_PATH))
+          cp $WIDGET_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/${WIDGET_UUID}.mobileprovision
+
+          echo "WIDGET_PROFILE_UUID=$WIDGET_UUID" >> $GITHUB_ENV
+          echo "WIDGET_PROFILE_NAME=$WIDGET_NAME" >> $GITHUB_ENV
+
+      - name: Configure manual signing
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          PROJECT="ios/Runner.xcodeproj/project.pbxproj"
+
+          # Runner target: inject manual signing after entitlements line
+          perl -i -pe '
+            if (/CODE_SIGN_ENTITLEMENTS = Runner\/Runner\.entitlements;/) {
+              $_ .= "\t\t\t\tCODE_SIGN_STYLE = Manual;\n";
+              $_ .= "\t\t\t\tDEVELOPMENT_TEAM = $ENV{APPLE_TEAM_ID};\n";
+              $_ .= "\t\t\t\t\"CODE_SIGN_IDENTITY[sdk=iphoneos*]\" = \"Apple Distribution\";\n";
+              $_ .= "\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"$ENV{MAIN_PROFILE_NAME}\";\n";
+            }
+          ' "$PROJECT"
+
+          # Widget target: switch Automatic → Manual
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' "$PROJECT"
+
+          # Widget target: inject signing config after entitlements line
+          perl -i -pe '
+            if (/CODE_SIGN_ENTITLEMENTS = QuranAyahWidgetExtension\/QuranAyahWidgetExtension\.entitlements;/) {
+              $_ .= "\t\t\t\tDEVELOPMENT_TEAM = $ENV{APPLE_TEAM_ID};\n";
+              $_ .= "\t\t\t\t\"CODE_SIGN_IDENTITY[sdk=iphoneos*]\" = \"Apple Distribution\";\n";
+              $_ .= "\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"$ENV{WIDGET_PROFILE_NAME}\";\n";
+            }
+          ' "$PROJECT"
+
+      - name: Prepare ExportOptions.plist
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          sed -i '' "s|TEAM_ID_PLACEHOLDER|$APPLE_TEAM_ID|g" ios/ExportOptions.plist
+          sed -i '' "s|MAIN_PROFILE_PLACEHOLDER|$MAIN_PROFILE_NAME|g" ios/ExportOptions.plist
+          sed -i '' "s|WIDGET_PROFILE_PLACEHOLDER|$WIDGET_PROFILE_NAME|g" ios/ExportOptions.plist
+
+      - name: Setup App Store Connect API key
+        env:
+          APP_STORE_CONNECT_API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+        run: |
+          mkdir -p ~/.private_keys
+          echo "$APP_STORE_CONNECT_API_KEY" | base64 --decode -o ~/.private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8
+
+      - name: Build IPA
+        run: |
+          flutter build ipa \
+            --release \
+            --build-number=${{ github.run_number }} \
+            --export-options-plist=ios/ExportOptions.plist
+
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            -f build/ios/ipa/*.ipa \
+            --apiKey $APP_STORE_CONNECT_API_KEY_ID \
+            --apiIssuer $APP_STORE_CONNECT_ISSUER_ID
+
+      - name: Clean up signing
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true
+          rm -f $RUNNER_TEMP/certificate.p12
+          rm -f $RUNNER_TEMP/main_profile.mobileprovision
+          rm -f $RUNNER_TEMP/widget_profile.mobileprovision
+          rm -rf ~/.private_keys
