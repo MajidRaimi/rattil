@@ -114,6 +114,20 @@ jobs:
             }
           ' "$PROJECT"
 
+          # Set ProvisioningStyle = Manual in target attributes (Runner)
+          perl -i -pe '
+            if (/LastSwiftMigration = 1100;/) {
+              $_ .= "\t\t\t\t\t\tProvisioningStyle = Manual;\n";
+            }
+          ' "$PROJECT"
+
+          # Set ProvisioningStyle = Manual in target attributes (Widget)
+          perl -i -pe '
+            if (/CreatedOnToolsVersion = 26\./) {
+              $_ .= "\t\t\t\t\t\tProvisioningStyle = Manual;\n";
+            }
+          ' "$PROJECT"
+
       - name: Prepare ExportOptions.plist
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
