@@ -58,13 +58,7 @@ struct AyahWidgetEntryView: View {
     @Environment(\.widgetFamily) var widgetFamily
 
     private var isDark: Bool {
-        let userDefaults = UserDefaults(suiteName: "group.app.rattil")
-        let appTheme = userDefaults?.string(forKey: "app_theme") ?? "system"
-        switch appTheme {
-        case "light": return false
-        case "dark": return true
-        default: return systemColorScheme == .dark
-        }
+        systemColorScheme == .dark
     }
 
     private var image: UIImage? {

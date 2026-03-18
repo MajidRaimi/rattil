@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:quran/quran.dart' as quran;
 import 'package:quran_flutter/quran_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_color_scheme.dart';
 import '../../features/home_widget/ayah_widget_view.dart';
 
@@ -17,11 +16,6 @@ class HomeWidgetService {
   }
 
   static Future<void> updateWidget() async {
-    // Save app theme mode so the iOS widget can read it
-    final prefs = await SharedPreferences.getInstance();
-    final themeMode = prefs.getString('theme_mode') ?? 'system';
-    await HomeWidget.saveWidgetData('app_theme', themeMode);
-
     // Render all 3 sizes
     await Future.wait([
       _renderSize(WidgetSize.small),
