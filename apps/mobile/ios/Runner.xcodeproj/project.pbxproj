@@ -20,6 +20,7 @@
 		B7CAD1072F68D4C800CCED9E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B7CAD1062F68D4C800CCED9E /* SwiftUI.framework */; };
 		B7CAD1182F68D4C900CCED9E /* QuranAyahWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B7CAD1032F68D4C800CCED9E /* QuranAyahWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F3C040E0E212D15EC0BF1A26 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EE7C2319356FC63FE7EF5481 /* Pods_Runner.framework */; };
+		F7B7D1022F7A000000000002 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F7B7D1012F7A000000000001 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -94,6 +95,7 @@
 		C055C8B537839500ECDD23A5 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4A69AA4A80569C07FA8D8FB /* Pods_QuranAyahWidgetExtensionExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_QuranAyahWidgetExtensionExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE7C2319356FC63FE7EF5481 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		F7B7D1012F7A000000000001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -232,6 +234,7 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				F7B7D1012F7A000000000001 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -363,6 +366,7 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				F7B7D1022F7A000000000002 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

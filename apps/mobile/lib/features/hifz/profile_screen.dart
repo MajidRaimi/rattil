@@ -4,6 +4,7 @@ import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:progress_border/progress_border.dart';
 import 'package:quran/quran.dart' as quran;
+import 'package:showcaseview/showcaseview.dart';
 import 'package:tab_container/tab_container.dart';
 import '../../core/theme/app_color_scheme.dart';
 import '../../core/theme/app_typography.dart';
@@ -14,6 +15,7 @@ import '../../data/services/notification_service.dart';
 import '../../providers/quran_providers.dart';
 import '../../providers/tikrar_provider.dart';
 import '../home/widgets/surah_search_tile.dart';
+import '../tutorial/tutorial_keys.dart';
 import '../../providers/wird_provider.dart';
 import 'hifz_player_screen.dart';
 
@@ -21,10 +23,10 @@ class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen>
+class ProfileScreenState extends ConsumerState<ProfileScreen>
     with TickerProviderStateMixin {
   late final TabController _tabController;
 
@@ -38,6 +40,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void switchToTab(int index) {
+    _tabController.animateTo(index);
   }
 
   @override
@@ -57,8 +63,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               child: Text(
                 Locales.string(context, 'profile'),
-                style: typo.headlineLarge.copyWith(
+                style: typo.headlineMedium.copyWith(
                   color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -67,34 +74,64 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
             // ── Tab Container ──
             Expanded(
-              child: TabContainer(
-                controller: _tabController,
-                tabEdge: TabEdge.top,
-                tabExtent: 40,
-                borderRadius: BorderRadius.zero,
-                tabBorderRadius: BorderRadius.circular(10),
-                childPadding: EdgeInsets.zero,
-                color: colors.surface,
-                selectedTextStyle: typo.bodySmall.copyWith(
-                  color: colors.gold,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
+              child: Showcase(
+                key: TutorialKeys.profileTabs,
+                title: Locales.string(context, 'tutorial_profile_title'),
+                description: Locales.string(context, 'tutorial_profile_desc'),
+                tooltipBackgroundColor: colors.surface,
+                titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                targetBorderRadius: BorderRadius.circular(16),
+                overlayOpacity: 0.75,
+                child: TabContainer(
+                  controller: _tabController,
+                  tabEdge: TabEdge.top,
+                  tabExtent: 40,
+                  borderRadius: BorderRadius.zero,
+                  tabBorderRadius: BorderRadius.circular(10),
+                  childPadding: EdgeInsets.zero,
+                  color: colors.surface,
+                  selectedTextStyle: typo.bodySmall.copyWith(
+                    color: colors.gold,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                  unselectedTextStyle: typo.bodySmall.copyWith(
+                    color: colors.textTertiary,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                  tabs: [
+                    Text(Locales.string(context, 'hifz_tab')),
+                    Text(Locales.string(context, 'wird_tab')),
+                    Text(Locales.string(context, 'progress_tab')),
+                  ],
+                  children: [
+                    _HifzTab(),
+                    Showcase(
+                      key: TutorialKeys.wirdContent,
+                      title: Locales.string(context, 'tutorial_wird_tab_title'),
+                      description: Locales.string(context, 'tutorial_wird_tab_desc'),
+                      tooltipBackgroundColor: colors.surface,
+                      titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                      descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                      targetBorderRadius: BorderRadius.circular(16),
+                      overlayOpacity: 0.75,
+                      child: _WirdTab(),
+                    ),
+                    Showcase(
+                      key: TutorialKeys.progressContent,
+                      title: Locales.string(context, 'tutorial_progress_tab_title'),
+                      description: Locales.string(context, 'tutorial_progress_tab_desc'),
+                      tooltipBackgroundColor: colors.surface,
+                      titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                      descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                      targetBorderRadius: BorderRadius.circular(16),
+                      overlayOpacity: 0.75,
+                      child: _ProgressTab(),
+                    ),
+                  ],
                 ),
-                unselectedTextStyle: typo.bodySmall.copyWith(
-                  color: colors.textTertiary,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 13,
-                ),
-                tabs: [
-                  Text(Locales.string(context, 'hifz_tab')),
-                  Text(Locales.string(context, 'wird_tab')),
-                  Text(Locales.string(context, 'progress_tab')),
-                ],
-                children: [
-                  _HifzTab(),
-                  _WirdTab(),
-                  _ProgressTab(),
-                ],
               ),
             ),
           ],

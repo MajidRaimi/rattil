@@ -141,37 +141,36 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
                           markers: markers,
                           highlightColor: theme.highlightColor,
                           textColor: theme.textColor,
-                          onTapUpExact: (tapRatio) {
-                            if (widget.onVerseTap == null ||
-                                versesOnLine.isEmpty) {
-                              return;
-                            }
+                          onTapUpExact: widget.onVerseTap == null
+                              ? null
+                              : (tapRatio) {
+                                  if (versesOnLine.isEmpty) return;
 
-                            PageVerseData? target;
-                            for (final verse in versesOnLine) {
-                              final hList = verse.highlights1441
-                                  .where((h) => h.line == line);
-                              for (final h in hList) {
-                                if (tapRatio >= h.left &&
-                                    tapRatio <= h.right) {
-                                  target = verse;
-                                  break;
-                                }
-                              }
-                              if (target != null) break;
-                            }
+                                  PageVerseData? target;
+                                  for (final verse in versesOnLine) {
+                                    final hList = verse.highlights1441
+                                        .where((h) => h.line == line);
+                                    for (final h in hList) {
+                                      if (tapRatio >= h.left &&
+                                          tapRatio <= h.right) {
+                                        target = verse;
+                                        break;
+                                      }
+                                    }
+                                    if (target != null) break;
+                                  }
 
-                            target ??= markers.isNotEmpty
-                                ? markers.last
-                                : versesOnLine.last;
+                                  target ??= markers.isNotEmpty
+                                      ? markers.last
+                                      : versesOnLine.last;
 
-                            if (kDebugMode) {
-                              print(
-                                "Calling onVerseTap with chapter: ${target.chapter}, verse: ${target.number}",
-                              );
-                            }
-                            widget.onVerseTap!(target.chapter, target.number);
-                          },
+                                  if (kDebugMode) {
+                                    print(
+                                      "Calling onVerseTap with chapter: ${target.chapter}, verse: ${target.number}",
+                                    );
+                                  }
+                                  widget.onVerseTap!(target.chapter, target.number);
+                                },
                           onLongPressExact: widget.onVerseLongPress == null
                               ? null
                               : (tapRatio) {

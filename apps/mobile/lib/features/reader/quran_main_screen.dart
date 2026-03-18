@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:showcaseview/showcaseview.dart';
 import '../../core/utils/ordinal_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:imad_flutter/imad_flutter.dart' as imad;
@@ -15,10 +16,13 @@ import '../../core/theme/typography_ext.dart';
 import '../../data/services/recitation_service.dart';
 import '../../data/services/tafseer_service.dart';
 import '../../providers/quran_providers.dart';
+import '../../providers/tutorial_provider.dart';
 import '../bookmarks/bookmarks_screen.dart';
 import '../hifz/profile_screen.dart';
 import '../search/search_screen.dart';
 import '../settings/settings_screen.dart';
+import '../tutorial/tutorial_keys.dart';
+import '../../providers/wird_provider.dart';
 import 'widgets/page_picker_sheet.dart';
 import 'widgets/surah_picker_sheet.dart';
 import 'widgets/juz_picker_sheet.dart';
@@ -108,16 +112,88 @@ class _AppShellState extends ConsumerState<_AppShell> {
   bool _transitioning = false;
   int _currentJuz = 1;
   int _currentHizb = 1;
+  bool _tutorialActive = false;
+  int _tutorialPhase = 0;
 
   final _mushafPageKey = GlobalKey<imad.MushafPageViewState>();
+  BuildContext? _showcaseContext;
 
   bool get _isMushaf => _activeTab == _kQuranTab;
+  bool get _effectiveShowChrome => _showChrome || _tutorialActive;
 
   @override
   void initState() {
     super.initState();
     _currentPage = widget.initialPage;
     _loadPageMetadata(widget.initialPage);
+  }
+
+  void _startTutorial() {
+    setState(() {
+      _tutorialActive = true;
+      _showChrome = true;
+      _tutorialPhase = 1;
+      _activeTab = _kQuranTab;
+    });
+    // Wait for the chrome slide-in animation (300ms) to finish
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) {
+        ShowCaseWidget.of(_showcaseContext!).startShowCase(TutorialKeys.phase1Steps);
+      }
+    });
+  }
+
+  void _onTutorialComplete() {
+    if (_tutorialPhase == 1) {
+      // Phase 1 done → start phase 2 (reader chrome)
+      setState(() {
+        _tutorialPhase = 2;
+        _showChrome = true;
+        _activeTab = _kQuranTab;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ShowCaseWidget.of(_showcaseContext!).startShowCase(TutorialKeys.phase2Steps);
+      });
+    } else if (_tutorialPhase == 2) {
+      // Phase 2 done → switch to Hifz tab, show profile overview
+      setState(() {
+        _tutorialPhase = 3;
+        _activeTab = 3;
+        _transitioning = false;
+      });
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ShowCaseWidget.of(_showcaseContext!).startShowCase(TutorialKeys.phase3Steps);
+        }
+      });
+    } else if (_tutorialPhase == 3) {
+      // Profile tabs shown → switch to Wird tab
+      TutorialKeys.profileScreen.currentState?.switchToTab(1);
+      setState(() => _tutorialPhase = 4);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ShowCaseWidget.of(_showcaseContext!).startShowCase(TutorialKeys.phase4Steps);
+        }
+      });
+    } else if (_tutorialPhase == 4) {
+      // Wird shown → switch to Progress tab
+      TutorialKeys.profileScreen.currentState?.switchToTab(2);
+      setState(() => _tutorialPhase = 5);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ShowCaseWidget.of(_showcaseContext!).startShowCase(TutorialKeys.phase5Steps);
+        }
+      });
+    } else if (_tutorialPhase == 5) {
+      // All phases done
+      ref.read(tutorialStatusProvider.notifier).markCompleted();
+      setState(() {
+        _tutorialActive = false;
+        _tutorialPhase = 0;
+        _activeTab = _kQuranTab;
+        _showChrome = true;
+      });
+    }
   }
 
   Future<void> _navigateToReader(ReaderNavigationRequest req) async {
@@ -197,7 +273,52 @@ class _AppShellState extends ConsumerState<_AppShell> {
     final locale = Locales.currentLocale(context)?.languageCode ?? 'en';
     final prefix = Locales.string(context, 'surah_prefix');
     if (locale == 'ar') return '$prefix ${quran.getSurahNameArabic(surahNum)}';
-    return '$prefix ${quran.getSurahNameEnglish(surahNum)}';
+    return '$prefix ${quran.getSurahName(surahNum)}';
+  }
+
+  Widget _buildWirdChip(AppColorScheme colors) {
+    final wird = ref.watch(wirdConfigNotifierProvider);
+    if (wird == null) return const SizedBox.shrink();
+    final inWird = _currentPage >= wird.currentStartPage && _currentPage <= wird.endPage;
+
+    final totalPages = wird.endPage - wird.currentStartPage + 1;
+    final pagesIn = (_currentPage - wird.currentStartPage + 1).clamp(0, totalPages);
+    final progress = pagesIn / totalPages;
+
+    return Opacity(
+      opacity: inWird ? 1.0 : 0.0,
+      child: TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: progress),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return CustomPaint(
+          painter: _WirdProgressPainter(
+            progress: value,
+            color: colors.gold,
+            trackColor: colors.gold.withValues(alpha: 0.2),
+          ),
+          child: child,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        decoration: BoxDecoration(
+          color: colors.gold.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          Locales.string(context, 'wird_daily'),
+          style: TextStyle(
+            fontFamily: 'NeueFrutigerWorld',
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: colors.gold,
+          ),
+        ),
+      ),
+    ),
+    );
   }
 
   void _toggleChrome() => setState(() => _showChrome = !_showChrome);
@@ -302,6 +423,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
       _navigateToReader(next);
     });
 
+    // Listen for tutorial status changes:
+    // - First launch: async _loadFromPrefs sets state from true→false
+    // - Replay from Settings: reset() sets state from true→false
+    ref.listen(tutorialStatusProvider, (prev, next) {
+      if (next == false && !_tutorialActive) {
+        _startTutorial();
+      }
+    });
+
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final mushafTheme = isDark
@@ -309,62 +439,80 @@ class _AppShellState extends ConsumerState<_AppShell> {
         : imad.ReadingTheme.light;
     final readerBg = isDark ? colors.background : const Color(0xFFFFF8E1);
 
-    return imad.MushafThemeScope(
-      notifier:
-          imad.MushafThemeNotifier(initialTheme: mushafTheme),
-      child: Scaffold(
-        backgroundColor: readerBg,
-        body: Stack(
-          children: [
-            // ── Views ──
-            Positioned.fill(
-              child: IndexedStack(
-                index: _activeTab,
-                children: [
-                  const SearchScreen(),      // 0
-                  const BookmarksScreen(),    // 1
-                  _buildMushafView(mushafTheme), // 2 (center)
-                  const ProfileScreen(),      // 3
-                  const SettingsScreen(),     // 4
-                ],
-              ),
-            ),
-
-            // ── Transition overlay (between views and chrome/bar) ──
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: !_transitioning,
-                child: AnimatedOpacity(
-                  opacity: _transitioning ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 150),
-                  curve: Curves.easeInOut,
-                  child: ColoredBox(color: colors.background),
+    return ShowCaseWidget(
+      onFinish: _onTutorialComplete,
+      disableMovingAnimation: true,
+      builder: (showcaseCtx) {
+        _showcaseContext = showcaseCtx;
+        return imad.MushafThemeScope(
+        notifier:
+            imad.MushafThemeNotifier(initialTheme: mushafTheme),
+        child: Scaffold(
+          backgroundColor: readerBg,
+          body: Stack(
+            children: [
+              // ── Views ──
+              Positioned.fill(
+                child: IndexedStack(
+                  index: _activeTab,
+                  children: [
+                    const SearchScreen(),      // 0
+                    const BookmarksScreen(),    // 1
+                    _buildMushafView(mushafTheme), // 2 (center)
+                    ProfileScreen(key: TutorialKeys.profileScreen),      // 3
+                    const SettingsScreen(),     // 4
+                  ],
                 ),
               ),
-            ),
 
-            // ── Top chrome (mushaf only) ──
-            if (_isMushaf) _buildTopChrome(),
+              // ── Transition overlay (between views and chrome/bar) ──
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: !_transitioning,
+                  child: AnimatedOpacity(
+                    opacity: _transitioning ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeInOut,
+                    child: ColoredBox(color: colors.background),
+                  ),
+                ),
+              ),
 
-            // ── Bottom bar ──
-            _buildBottomBar(),
-          ],
+              // ── Top chrome (mushaf only) ──
+              if (_isMushaf) _buildTopChrome(),
+
+              // ── Bottom bar ──
+              _buildBottomBar(),
+            ],
+          ),
         ),
-      ),
+        );
+      },
     );
   }
 
   Widget _buildMushafView(imad.ReadingTheme mushafTheme) {
-    return imad.MushafPageView(
-      key: _mushafPageKey,
-      initialPage: _currentPage,
-      onPageChanged: _onPageChanged,
-      onTap: _toggleChrome,
-      onVerseLongPress: _onVerseLongPress,
-      showNavigationControls: false,
-      showPageInfo: false,
-      showAudioPlayer: false,
-      readingTheme: mushafTheme,
+    final colors = context.colors;
+    return Showcase(
+      key: TutorialKeys.readerArea,
+      title: Locales.string(context, 'tutorial_reader_title'),
+      description: Locales.string(context, 'tutorial_reader_desc'),
+      tooltipBackgroundColor: colors.surface,
+      titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+      descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+      targetBorderRadius: BorderRadius.circular(16),
+      overlayOpacity: 0.75,
+      child: imad.MushafPageView(
+        key: _mushafPageKey,
+        initialPage: _currentPage,
+        onPageChanged: _onPageChanged,
+        onTap: _toggleChrome,
+        onVerseLongPress: _onVerseLongPress,
+        showNavigationControls: false,
+        showPageInfo: false,
+        showAudioPlayer: false,
+        readingTheme: mushafTheme,
+      ),
     );
   }
 
@@ -412,7 +560,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
     final locale = Locales.currentLocale(context)?.languageCode ?? 'en';
     final prefix = Locales.string(context, 'surah_prefix');
     if (locale == 'ar') return '$prefix ${quran.getSurahNameArabic(surahNumber)}';
-    return '$prefix ${quran.getSurahNameEnglish(surahNumber)}';
+    return '$prefix ${quran.getSurahName(surahNumber)}';
   }
 
   void _onVerseLongPress(int surahNumber, int verseNumber) {
@@ -609,13 +757,13 @@ class _AppShellState extends ConsumerState<_AppShell> {
       left: 0,
       right: 0,
       child: IgnorePointer(
-        ignoring: !_showChrome,
+        ignoring: !_effectiveShowChrome,
         child: AnimatedSlide(
-          offset: Offset(0, _showChrome ? 0 : -1),
+          offset: Offset(0, _effectiveShowChrome ? 0 : -1),
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           child: AnimatedOpacity(
-            opacity: _showChrome ? 1.0 : 0.0,
+            opacity: _effectiveShowChrome ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 250),
             child: Container(
               padding: EdgeInsets.fromLTRB(
@@ -627,39 +775,73 @@ class _AppShellState extends ConsumerState<_AppShell> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Start: Page number & Surah name
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        onTap: _showPagePicker,
-                        child: Text(
-                          '${Locales.string(context, 'page')} $_currentPage / 604',
-                          style: metaStyle.copyWith(fontWeight: FontWeight.w400),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            Showcase(
+                              key: TutorialKeys.pageNumber,
+                              title: Locales.string(context, 'tutorial_page_title'),
+                              description: Locales.string(context, 'tutorial_page_desc'),
+                              tooltipBackgroundColor: colors.surface,
+                              titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                              descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                              targetBorderRadius: BorderRadius.circular(16),
+                              child: GestureDetector(
+                                onTap: _showPagePicker,
+                                child: Text(
+                                  '${Locales.string(context, 'page')} $_currentPage / 604',
+                                  style: metaStyle.copyWith(fontWeight: FontWeight.w400),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildWirdChip(colors),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      GestureDetector(
-                        onTap: _showSurahPicker,
-                        child: Text(
-                          _currentSurahName,
-                          style: typo.arabicDisplay.copyWith(
-                            fontSize: 20,
-                            color: colors.gold,
+                        const SizedBox(height: 2),
+                        Showcase(
+                          key: TutorialKeys.surahName,
+                          title: Locales.string(context, 'tutorial_surah_title'),
+                          description: Locales.string(context, 'tutorial_surah_desc'),
+                          tooltipBackgroundColor: colors.surface,
+                          titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                          descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                          targetBorderRadius: BorderRadius.circular(16),
+                          child: GestureDetector(
+                            onTap: _showSurahPicker,
+                            child: Text(
+                              _currentSurahName,
+                              style: typo.arabicDisplay.copyWith(
+                                fontSize: 20,
+                                color: colors.gold,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const Spacer(),
                   // End: Juz & Hizb
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      GestureDetector(
-                        onTap: _showJuzPicker,
-                        child: Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
+                      Showcase(
+                        key: TutorialKeys.juzLabel,
+                        title: Locales.string(context, 'tutorial_juz_title'),
+                        description: Locales.string(context, 'tutorial_juz_desc'),
+                        tooltipBackgroundColor: colors.surface,
+                        titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                        descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                        targetBorderRadius: BorderRadius.circular(16),
+                        child: GestureDetector(
+                          onTap: _showJuzPicker,
+                          child: Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
+                        ),
                       ),
                       const SizedBox(height: 2),
                       GestureDetector(
@@ -681,7 +863,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomPad = MediaQuery.of(context).padding.bottom;
-    final bool visible = _showChrome || !_isMushaf;
+    final bool visible = _effectiveShowChrome || !_isMushaf;
     final readerBg = isDark ? colors.background : const Color(0xFFFFF8E1);
     final barBg = _isMushaf ? readerBg : colors.background;
 
@@ -731,69 +913,129 @@ class _AppShellState extends ConsumerState<_AppShell> {
                           : Colors.transparent,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      _BarIcon(
-                        icon: Icons.search_rounded,
-                        isActive: _activeTab == 0,
-                        onTap: () => _switchTab(0),
-                      ),
-                      _BarIcon(
-                        icon: Icons.bookmark_rounded,
-                        isActive: _activeTab == 1,
-                        onTap: () => _switchTab(1),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _switchTab(_kQuranTab),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOutCubic,
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _activeTab == _kQuranTab
-                                  ? colors.gold
-                                      .withValues(alpha: 0.12)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: TweenAnimationBuilder<Color?>(
-                              tween: ColorTween(
-                                end: _activeTab == _kQuranTab
-                                    ? colors.gold
-                                    : colors.textSecondary,
-                              ),
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, color, _) =>
-                                  AnimatedScale(
-                                scale:
-                                    _activeTab == _kQuranTab ? 1.1 : 1.0,
-                                duration:
-                                    const Duration(milliseconds: 300),
+                  child: Showcase(
+                    key: TutorialKeys.bottomBar,
+                    title: Locales.string(context, 'tutorial_bottom_bar_title'),
+                    description: Locales.string(context, 'tutorial_bottom_bar_desc'),
+                    tooltipBackgroundColor: colors.surface,
+                    titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                    descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                    targetBorderRadius: BorderRadius.circular(24),
+                    overlayOpacity: 0.75,
+                    child: Row(
+                      children: [
+                        Showcase(
+                          key: TutorialKeys.searchTab,
+                          title: Locales.string(context, 'tutorial_search_title'),
+                          description: Locales.string(context, 'tutorial_search_desc'),
+                          tooltipBackgroundColor: colors.surface,
+                          titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                          descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                          targetBorderRadius: BorderRadius.circular(16),
+                          overlayOpacity: 0.75,
+                          child: _BarIcon(
+                            icon: Icons.search_rounded,
+                            isActive: _activeTab == 0,
+                            onTap: () => _switchTab(0),
+                          ),
+                        ),
+                        Showcase(
+                          key: TutorialKeys.bookmarksTab,
+                          title: Locales.string(context, 'tutorial_bookmarks_title'),
+                          description: Locales.string(context, 'tutorial_bookmarks_desc'),
+                          tooltipBackgroundColor: colors.surface,
+                          titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                          descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                          targetBorderRadius: BorderRadius.circular(16),
+                          overlayOpacity: 0.75,
+                          child: _BarIcon(
+                            icon: Icons.bookmark_rounded,
+                            isActive: _activeTab == 1,
+                            onTap: () => _switchTab(1),
+                          ),
+                        ),
+                        Expanded(
+                          child: Showcase(
+                            key: TutorialKeys.quranTab,
+                            title: Locales.string(context, 'tutorial_quran_tab_title'),
+                            description: Locales.string(context, 'tutorial_quran_tab_desc'),
+                            tooltipBackgroundColor: colors.surface,
+                            titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                            descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                            targetBorderRadius: BorderRadius.circular(18),
+                            overlayOpacity: 0.75,
+                            child: GestureDetector(
+                              onTap: () => _switchTab(_kQuranTab),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeOutCubic,
-                                child: Icon(
-                                  Icons.auto_stories_rounded,
-                                  color: color,
-                                  size: 24,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: _activeTab == _kQuranTab
+                                      ? colors.gold
+                                          .withValues(alpha: 0.12)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                                child: TweenAnimationBuilder<Color?>(
+                                  tween: ColorTween(
+                                    end: _activeTab == _kQuranTab
+                                        ? colors.gold
+                                        : colors.textSecondary,
+                                  ),
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, color, _) =>
+                                      AnimatedScale(
+                                    scale:
+                                        _activeTab == _kQuranTab ? 1.1 : 1.0,
+                                    duration:
+                                        const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    child: Icon(
+                                      Icons.auto_stories_rounded,
+                                      color: color,
+                                      size: 24,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      _BarIcon(
-                        icon: Icons.person_rounded,
-                        isActive: _activeTab == 3,
-                        onTap: () => _switchTab(3),
-                      ),
-                      _BarIcon(
-                        icon: Icons.settings_rounded,
-                        isActive: _activeTab == 4,
-                        onTap: () => _switchTab(4),
-                      ),
-                    ],
+                        Showcase(
+                          key: TutorialKeys.hifzTab,
+                          title: Locales.string(context, 'tutorial_hifz_title'),
+                          description: Locales.string(context, 'tutorial_hifz_desc'),
+                          tooltipBackgroundColor: colors.surface,
+                          titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                          descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                          targetBorderRadius: BorderRadius.circular(16),
+                          overlayOpacity: 0.75,
+                          child: _BarIcon(
+                            icon: Icons.person_rounded,
+                            isActive: _activeTab == 3,
+                            onTap: () => _switchTab(3),
+                          ),
+                        ),
+                        Showcase(
+                          key: TutorialKeys.settingsTab,
+                          title: Locales.string(context, 'tutorial_settings_title'),
+                          description: Locales.string(context, 'tutorial_settings_desc'),
+                          tooltipBackgroundColor: colors.surface,
+                          titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                          descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                          targetBorderRadius: BorderRadius.circular(16),
+                          overlayOpacity: 0.75,
+                          child: _BarIcon(
+                            icon: Icons.settings_rounded,
+                            isActive: _activeTab == 4,
+                            onTap: () => _switchTab(4),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1320,4 +1562,51 @@ class _BarIcon extends StatelessWidget {
       ),
     );
   }
+}
+
+class _WirdProgressPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color trackColor;
+
+  _WirdProgressPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(20));
+
+    // Draw track (full border, subtle)
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawRRect(rrect, trackPaint);
+
+    // Draw progress over the track
+    if (progress <= 0) return;
+
+    final progressPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+
+    // Extract a portion of the rounded rect path based on progress
+    final path = Path()..addRRect(rrect);
+    final metrics = path.computeMetrics().first;
+    final progressPath = metrics.extractPath(0, metrics.length * progress.clamp(0.0, 1.0));
+
+    canvas.drawPath(progressPath, progressPaint);
+  }
+
+  @override
+  bool shouldRepaint(_WirdProgressPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.color != color ||
+      oldDelegate.trackColor != trackColor;
 }

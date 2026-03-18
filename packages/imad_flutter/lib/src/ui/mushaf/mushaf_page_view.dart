@@ -216,7 +216,10 @@ class MushafPageViewState extends State<MushafPageView> {
   }
 
   void _toggleControls() {
-    setState(() => _showControls = !_showControls);
+    setState(() {
+      _showControls = !_showControls;
+      if (_selectedVerseKey != null) _selectedVerseKey = null;
+    });
     widget.onTap?.call();
   }
 
@@ -267,13 +270,7 @@ class MushafPageViewState extends State<MushafPageView> {
                             ? _currentAudioVerseKey
                             : null,
                         audioHighlightsColor: widget.audioHighlightsColor,
-                        onVerseTap: (chapter, verse) {
-                          // Tap always toggles controls and clears highlight
-                          if (_selectedVerseKey != null) {
-                            setState(() => _selectedVerseKey = null);
-                          }
-                          _toggleControls();
-                        },
+                        onVerseTap: null,
                         onVerseLongPress: widget.onVerseLongPress == null
                             ? null
                             : (chapter, verse) {

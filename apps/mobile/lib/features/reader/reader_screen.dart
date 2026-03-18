@@ -72,7 +72,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final locale = Locales.currentLocale(context)?.languageCode ?? 'en';
     final prefix = Locales.string(context, 'surah_prefix');
     if (locale == 'ar') return '$prefix ${quran.getSurahNameArabic(surahNum)}';
-    return '$prefix ${quran.getSurahNameEnglish(surahNum)}';
+    return '$prefix ${quran.getSurahName(surahNum)}';
   }
 
   @override
@@ -377,7 +377,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                       typo.arabicDisplay.copyWith(fontSize: 18),
                 ),
                 Text(
-                  quran.getSurahNameEnglish(widget.surahNumber),
+                  quran.getSurahName(widget.surahNumber),
                   style: typo.bodySmall,
                 ),
               ],

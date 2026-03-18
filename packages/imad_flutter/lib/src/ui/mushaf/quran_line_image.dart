@@ -59,31 +59,9 @@ class QuranLineImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final assetPath = QuranDataProvider.getLineImagePath(page, line);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapUp: (details) {
-        if (onTapUpExact != null) {
-          final box = context.findRenderObject() as RenderBox;
-          final localPosition = box.globalToLocal(details.globalPosition);
-          // `localPosition.dx` is 0 at the physical left edge and `width` at the right edge.
-          // Since we render highlights purely left-to-right based on `h.left` and `h.right`,
-          // our tap ratio matches exactly.
-          final tapRatio = localPosition.dx / box.size.width;
-          onTapUpExact!(tapRatio);
-        } else if (onTap != null) {
-          onTap!();
-        }
-      },
-      onTap: () {},
-      onLongPressStart: (details) {
-        if (onLongPressExact != null) {
-          final box = context.findRenderObject() as RenderBox;
-          final localPosition = box.globalToLocal(details.globalPosition);
-          final tapRatio = localPosition.dx / box.size.width;
-          onLongPressExact!(tapRatio);
-        }
-      },
-      child: LayoutBuilder(
+    final hasGestures = onTap != null || onTapUpExact != null || onLongPressExact != null;
+
+    Widget content = LayoutBuilder(
         builder: (context, constraints) {
           final lineWidth = constraints.maxWidth;
           final lineHeight = constraints.maxHeight;
@@ -104,7 +82,30 @@ class QuranLineImage extends StatelessWidget {
             ),
           );
         },
-      ),
+      );
+
+    if (!hasGestures) return content;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapUp: onTapUpExact != null
+          ? (details) {
+              final box = context.findRenderObject() as RenderBox;
+              final localPosition = box.globalToLocal(details.globalPosition);
+              final tapRatio = localPosition.dx / box.size.width;
+              onTapUpExact!(tapRatio);
+            }
+          : null,
+      onTap: onTap,
+      onLongPressStart: onLongPressExact != null
+          ? (details) {
+              final box = context.findRenderObject() as RenderBox;
+              final localPosition = box.globalToLocal(details.globalPosition);
+              final tapRatio = localPosition.dx / box.size.width;
+              onLongPressExact!(tapRatio);
+            }
+          : null,
+      child: content,
     );
   }
 

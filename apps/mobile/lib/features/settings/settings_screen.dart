@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:quran/quran.dart' as quran;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/supported_languages.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/typography_ext.dart';
@@ -9,6 +10,7 @@ import '../../data/services/notification_service.dart';
 import '../../providers/quran_providers.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/tikrar_provider.dart';
+import '../../providers/tutorial_provider.dart';
 import '../../providers/wird_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -59,6 +61,10 @@ class SettingsScreen extends ConsumerWidget {
 
               // ── Help & Support ──
               _FaqSection(),
+              const SizedBox(height: 12),
+
+              // ── Replay Tutorial ──
+              _ReplayTutorialTile(),
               const SizedBox(height: 16),
 
               // ── About ──
@@ -449,9 +455,71 @@ class _FaqSection extends StatelessWidget {
   }
 }
 
+// ── Replay Tutorial tile ──
+
+class _ReplayTutorialTile extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final typo = context.typography;
+    final colors = context.colors;
+
+    return GestureDetector(
+      onTap: () {
+        // Reset tutorial status — the listener in _AppShellState will
+        // detect the change and auto-start the tutorial.
+        ref.read(tutorialStatusProvider.notifier).reset();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(Icons.school_rounded, color: colors.gold, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  Locales.string(context, 'tutorial_replay'),
+                  style: typo.bodyLarge.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: colors.textTertiary,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── About section ──
 
-class _AboutSection extends StatelessWidget {
+class _AboutSection extends StatefulWidget {
+  @override
+  State<_AboutSection> createState() => _AboutSectionState();
+}
+
+class _AboutSectionState extends State<_AboutSection> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _version = info.version);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final typo = context.typography;
@@ -479,55 +547,51 @@ class _AboutSection extends StatelessWidget {
           child: Column(
             children: [
               _InfoTile(
-                  labelKey: 'total_surahs',
-                  value: '${quran.totalSurahCount}'),
+                  labelKey: 'app_version',
+                  value: _version),
               Divider(
                   height: 1,
                   indent: 16,
                   endIndent: 16,
                   color: colors.divider),
               _InfoTile(
-                  labelKey: 'total_ayahs',
-                  value: '${quran.totalVerseCount}'),
+                  labelKey: 'translation',
+                  value: Locales.string(context, 'saheeh_international')),
               Divider(
                   height: 1,
                   indent: 16,
                   endIndent: 16,
                   color: colors.divider),
               _InfoTile(
-                  labelKey: 'total_juz', value: '${quran.totalJuzCount}'),
+                  labelKey: 'arabic_script',
+                  value: Locales.string(context, 'uthmanic_hafs')),
               Divider(
                   height: 1,
                   indent: 16,
                   endIndent: 16,
                   color: colors.divider),
-              _InfoTile(
-                  labelKey: 'total_pages',
-                  value: '${quran.totalPagesCount}'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              _InfoTile(
-                labelKey: 'translation',
-                value: Locales.string(context, 'saheeh_international'),
-              ),
+              _LinkTile(
+                  labelKey: 'privacy_policy',
+                  value: Locales.string(context, 'privacy_policy'),
+                  url: 'https://github.com/MajidRaimi/rattil/blob/main/PRIVACY_POLICY.md'),
               Divider(
                   height: 1,
                   indent: 16,
                   endIndent: 16,
                   color: colors.divider),
-              _InfoTile(
-                labelKey: 'arabic_script',
-                value: Locales.string(context, 'uthmanic_hafs'),
-              ),
+              _LinkTile(
+                  labelKey: 'contact_support',
+                  value: Locales.string(context, 'contact_support'),
+                  url: 'mailto:majidraimi.dev@gmail.com'),
+              Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: colors.divider),
+              const _LinkTile(
+                  labelKey: 'source_code',
+                  value: 'GitHub',
+                  url: 'https://github.com/MajidRaimi/rattil'),
             ],
           ),
         ),
@@ -557,6 +621,47 @@ class _InfoTile extends StatelessWidget {
           ),
           Text(value, style: typo.bodyMedium),
         ],
+      ),
+    );
+  }
+}
+
+class _LinkTile extends StatelessWidget {
+  final String labelKey;
+  final String value;
+  final String url;
+
+  const _LinkTile({
+    required this.labelKey,
+    required this.value,
+    required this.url,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    return GestureDetector(
+      onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              Locales.string(context, labelKey),
+              style: typo.bodyLarge.copyWith(color: colors.textPrimary),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(value, style: typo.bodyMedium.copyWith(color: colors.goldDim)),
+                const SizedBox(width: 4),
+                Icon(Icons.open_in_new, size: 14, color: colors.goldDim),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

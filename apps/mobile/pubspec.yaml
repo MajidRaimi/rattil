@@ -39,6 +39,9 @@ dependencies:
   timezone: ^0.10.0
   flutter_native_splash: ^2.4.7
   home_widget: ^0.7.0
+  url_launcher: ^6.3.1
+  package_info_plus: ^8.0.0
+  showcaseview: ^3.0.0
 
 dev_dependencies:
   flutter_test:
