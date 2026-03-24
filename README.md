@@ -1,54 +1,96 @@
-# Rattil
+<p align="center">
+  <img src="apps/mobile/assets/app_icon.png" width="120" alt="Rattil" />
+</p>
 
-Offline-first Quran reading app built with Flutter. Beautiful dark UI, Uthmanic Arabic typography, and instant access to every ayah — no internet required.
+<h1 align="center">رتّل — Rattil</h1>
 
-## Overview
+<p align="center">
+  <em>أَوْ زِدْ عَلَيْهِ وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا</em>
+  <br/>
+  <sub>المزمل - ٤</sub>
+</p>
 
-Rattil bundles the complete Quran text (Uthmanic script + simplified Arabic), English translations (Saheeh International), and full-text search in a local SQLite database. Audio recitation streams from CDN via a lightweight Elysia API.
+<p align="center">
+  Your companion for reading and memorizing the Holy Quran.
+  <br/>
+  Free, offline-first, no accounts, no tracking.
+</p>
+
+<p align="center">
+  <a href="https://rattil.app">Website</a> · <a href="PRIVACY_POLICY.md">Privacy Policy</a> · <a href="mailto:majidsraimi@gmail.com">Contact</a>
+</p>
+
+---
+
+## Features
+
+- **Quran Reader** — Complete Quran in Uthmanic Hafs script, 604 pages, fully offline
+- **Search** — Find any surah or verse by Arabic text or surah name
+- **Bookmarks** — Save and organize verses for easy reference
+- **Hifz Tracking** — Track memorization progress juz by juz, page by page
+- **Wird** — Set daily reading goals with reminders and track consistency
+- **Tikrar** — Memorize verses through structured repetition with audio recitation
+- **Tasmi'** — AI-powered recitation verification *(coming soon)*
+- **44 Languages** — Full interface localization
+- **Home Widget** — iOS widget displaying a random Quran verse, updated hourly
+- **Dark & Light Theme** — System-aware with manual toggle
+- **Privacy** — No accounts, no tracking, no ads, no analytics. All data stays on your device.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Mobile | Flutter, Riverpod (code-gen), GoRouter |
-| Data | SQLite (sqflite) with FTS5 search |
-| API | Elysia (Bun) — audio metadata only |
-| Fonts | KFGQPC Uthmanic Hafs, Amiri |
-| Monorepo | Turborepo |
+| Mobile | Flutter 3.38, Riverpod, GoRouter |
+| Database | SQLite (sqflite) — bundled Quran data |
+| API | FastAPI (Python) — Tasmi' transcription service |
+| AI Model | [tarteel-ai/whisper-base-ar-quran](https://huggingface.co/tarteel-ai/whisper-base-ar-quran) |
+| Web | Next.js 16, Tailwind CSS v4, Tolgee i18n |
+| Fonts | UthmanicHafs (Quran), NeueFrutigerWorld (UI) |
+| Monorepo | Turborepo, Bun |
 
 ## Project Structure
 
 ```
 apps/
-  mobile/          # Flutter app (iOS + Android)
-  api/             # Elysia API server (Bun)
-scripts/
-  build-db.ts      # Fetches Quran data and builds SQLite DB
+  mobile/     # Flutter app (iOS + Android)
+  api/        # FastAPI — Tasmi' transcription service
+  web/        # Next.js landing page (rattil.app)
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Flutter SDK 3.10+
+- Flutter SDK 3.38+
 - Bun 1.0+
-- Node.js 18+ (for Turborepo)
+- Python 3.12+ with [uv](https://docs.astral.sh/uv/) (for API)
+- Docker (optional)
 
-### Setup
+### Mobile
 
 ```bash
-# Install dependencies
-bun install
-
-# Build the Quran database (fetches from quran.com API)
-bun run build:db
-
-# Run the API
-cd apps/api && bun run dev
-
-# Run the mobile app
-cd apps/mobile && flutter pub get && flutter run
+cd apps/mobile
+flutter pub get
+flutter run
 ```
+
+### Web
+
+```bash
+cd apps/web
+bun install
+bun dev
+```
+
+### API
+
+```bash
+cd apps/api
+uv sync
+uv run fastapi dev app/main.py
+```
+
+The API downloads the Whisper model on first run (~300MB).
 
 ### Code Generation
 
@@ -59,28 +101,29 @@ cd apps/mobile
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-## Features
-
-- **Offline reading** — Full Quran text bundled in SQLite, works without internet
-- **Uthmanic script** — Authentic KFGQPC Uthmanic Hafs font with generous line height
-- **Search** — FTS5 full-text search across Arabic text and English translations
-- **Bookmarks & Notes** — Save and annotate ayahs locally
-- **Audio recitation** — Stream from popular reciters with background playback
-- **Dark-first UI** — Near-black theme with gold accents, designed for long reading sessions
-
 ## Design
 
-- Background: `#0D0D0D`
-- Gold accent: `#D4A843`
-- Arabic text: KFGQPC Uthmanic Hafs (Quranic), Amiri (UI)
-- Material 3 dark theme
+| Token | Value |
+|-------|-------|
+| Gold | `#D4A843` |
+| Background (light) | `#F7F5F0` |
+| Background (dark) | `#0D0D0D` |
+| Surface (light) | `#FFFFFF` |
+| Surface (dark) | `#1A1A1A` |
+| Quran font | UthmanicHafs |
+| UI font | NeueFrutigerWorld (400/500/700) |
+| Border radius | 16px (cards), 12px (secondary), 8px (small) |
 
-## Data Sources
+## Privacy
 
-- Quran text: [quran.com API v4](https://api-docs.quran.com/)
-- Translation: Saheeh International (resource ID 20)
-- Fonts: KFGQPC Uthmanic Script HAFS, Google Fonts Amiri
+Rattil does not collect, store, or transmit any personal data. No accounts, no analytics, no tracking, no ads. All reading progress, bookmarks, and preferences are stored locally on your device. See [Privacy Policy](PRIVACY_POLICY.md).
 
 ## License
 
-All Quran text is in the public domain. See individual font licenses in `assets/fonts/`.
+All Quran text is in the public domain. See individual font licenses in `apps/mobile/assets/fonts/`.
+
+---
+
+<p align="center">
+  <sub>صدقة جارية لأمي وأمهات المسلمين، رحمهن الله</sub>
+</p>
