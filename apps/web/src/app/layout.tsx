@@ -78,10 +78,6 @@ export async function generateMetadata(): Promise<Metadata> {
         "max-snippet": -1,
       },
     },
-    icons: {
-      icon: "/images/app-icon.png",
-      apple: "/apple-touch-icon.png",
-    },
     manifest: "/manifest.webmanifest",
   };
 }

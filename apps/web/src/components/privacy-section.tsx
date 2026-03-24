@@ -52,15 +52,28 @@ export function PrivacySection() {
 
         <div className="grid grid-cols-3 gap-4" dir="ltr">
           {highlights.map((h, i) => (
-            <div key={h.labelKey} className="flex flex-col items-center gap-3">
+            <motion.div
+              key={h.labelKey}
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.15 }}
+              className="flex flex-col items-center gap-3"
+            >
               <p className="text-4xl sm:text-6xl font-bold text-[var(--text-primary)]">
                 <CountUp target={h.target} suffix={h.suffix} />
               </p>
-              <div className="w-6 h-px bg-[var(--gold-active)]" />
+              <motion.div
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.3 + i * 0.15 }}
+                className="w-6 h-px bg-[var(--gold-active)] origin-center"
+              />
               <p className="text-xs sm:text-sm text-[var(--text-tertiary)]">
                 {t(h.labelKey)}
               </p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </motion.div>

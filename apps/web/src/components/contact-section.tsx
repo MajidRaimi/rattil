@@ -9,11 +9,11 @@ export function ContactSection() {
   return (
     <section className="inset-x-0 px-4 pb-20 flex justify-center">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, scale: 0.97 }}
+        whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="relative w-full max-w-5xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-[var(--gold-active)] rounded-2xl px-8 py-7 sm:px-10 sm:py-8 overflow-hidden"
+        className="relative w-full max-w-5xl flex flex-col sm:flex-row items-center sm:items-center justify-between gap-6 bg-[var(--gold-active)] rounded-2xl px-8 py-7 sm:px-10 sm:py-8 overflow-hidden text-center sm:text-start"
       >
         {/* Scrolling ayahs background */}
         <div className="absolute inset-0 overflow-hidden select-none pointer-events-none" dir="rtl">
@@ -45,7 +45,9 @@ export function ContactSection() {
           </p>
         </div>
 
-        <a
+        <motion.a
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           href="mailto:majidsraimi@gmail.com?subject=Rattil Feature Request"
           className="relative flex-shrink-0 flex items-center gap-2 bg-white/15 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-white/25 transition-colors"
         >
@@ -63,7 +65,7 @@ export function ContactSection() {
               d="M8.25 4.5l7.5 7.5-7.5 7.5"
             />
           </svg>
-        </a>
+        </motion.a>
       </motion.div>
     </section>
   );

@@ -17,36 +17,28 @@ export function FeaturesGrid() {
 
   return (
     <section id="features" className="px-4 flex justify-center">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-3 border border-[var(--gold-active)]/25 rounded-2xl overflow-hidden"
-      >
-        {features.map((f, i) => {
-          const isTopRow = i < 3;
-          const isLeftOrMiddle = i % 3 !== 2;
-
-          return (
-            <div
+      <div className="w-full max-w-5xl rounded-2xl overflow-hidden border border-[var(--gold-active)]/25 bg-[var(--gold-active)]/25">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px">
+          {features.map((f, i) => (
+            <motion.div
               key={f.titleKey}
-              className={`px-6 py-6 ${
-                isTopRow ? "border-b border-[var(--gold-active)]/25" : ""
-              } ${
-                isLeftOrMiddle ? "sm:border-e border-[var(--gold-active)]/25" : ""
-              }`}
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              whileHover={{ backgroundColor: "var(--surface-variant)" }}
+              className="px-5 py-5 sm:px-6 sm:py-6 bg-[var(--bg)] text-center sm:text-start cursor-default transition-colors"
             >
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1.5">
+              <h3 className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] mb-1">
                 {t(f.titleKey)}
               </h3>
-              <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-[var(--text-tertiary)] leading-relaxed">
                 {t(f.descKey)}
               </p>
-            </div>
-          );
-        })}
-      </motion.div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }

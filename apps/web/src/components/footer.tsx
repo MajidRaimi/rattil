@@ -1,6 +1,9 @@
 "use client";
 
 import { useTranslate } from "@tolgee/react";
+import { motion } from "framer-motion";
+
+const columns = [0, 1, 2, 3];
 
 export function Footer() {
   const { t } = useTranslate();
@@ -10,7 +13,13 @@ export function Footer() {
       <div className="max-w-5xl mx-auto px-6 py-14">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-10">
           {/* Logo + tagline */}
-          <div className="col-span-2 sm:col-span-1">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4 }}
+            className="col-span-2 sm:col-span-1"
+          >
             <img
               src="/images/logo.svg"
               alt="Rattil"
@@ -21,10 +30,15 @@ export function Footer() {
             <p className="text-xs text-[var(--text-tertiary)] leading-relaxed max-w-[260px] mt-1">
               {t("footer_tagline_long")}
             </p>
-          </div>
+          </motion.div>
 
           {/* Quick Links */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
             <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
               {t("footer_quick_links")}
             </h4>
@@ -39,10 +53,15 @@ export function Footer() {
                 {t("nav_download")}
               </a>
             </div>
-          </div>
+          </motion.div>
 
           {/* Legal */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
             <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
               {t("footer_legal")}
             </h4>
@@ -54,10 +73,15 @@ export function Footer() {
                 {t("footer_terms")}
               </a>
             </div>
-          </div>
+          </motion.div>
 
           {/* Contact */}
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+          >
             <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
               {t("footer_contact_us")}
             </h4>
@@ -97,13 +121,13 @@ export function Footer() {
                 <span>{t("footer_location")}</span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
       {/* Bottom bar */}
       <div className="max-w-5xl mx-auto px-6">
-        <div className="border-t border-[var(--divider)] py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[var(--text-tertiary)]">
+        <div className="border-t border-[var(--divider)] py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[var(--text-tertiary)] text-center sm:text-start">
           <bdi>© {new Date().getFullYear()} {t("footer_brand")}. {t("footer_rights")}</bdi>
           <span className="text-[var(--text-tertiary)]/60 italic">
             {t("footer_dedication")}
