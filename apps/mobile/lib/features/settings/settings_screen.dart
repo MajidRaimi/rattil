@@ -582,7 +582,7 @@ class _AboutSectionState extends State<_AboutSection> {
               _LinkTile(
                   labelKey: 'contact_support',
                   value: Locales.string(context, 'contact_support'),
-                  url: 'mailto:majidraimi.dev@gmail.com'),
+                  url: 'mailto:majidsraimi@gmail.com'),
               Divider(
                   height: 1,
                   indent: 16,

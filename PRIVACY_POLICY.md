@@ -49,4 +49,4 @@ If we update this privacy policy, the changes will be posted on this page with a
 
 ## Contact
 
-If you have questions about this privacy policy, please open an issue at [github.com/MajidRaimi/rattil](https://github.com/MajidRaimi/rattil/issues) or email [majidraimi.dev@gmail.com](mailto:majidraimi.dev@gmail.com).
+If you have questions about this privacy policy, please open an issue at [github.com/MajidRaimi/rattil](https://github.com/MajidRaimi/rattil/issues) or email [majidsraimi@gmail.com](mailto:majidsraimi@gmail.com).
