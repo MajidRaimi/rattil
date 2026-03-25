@@ -7,5 +7,8 @@
   },
   "devDependencies": {
     "turbo": "latest"
+  },
+  "dependencies": {
+    "qrcode.react": "^4.2.0"
   }
 }

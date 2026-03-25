@@ -1,5 +1,7 @@
 import io
 import re
+import subprocess
+import tempfile
 
 import librosa
 import torch
@@ -24,8 +26,20 @@ def transcribe(audio_bytes: bytes) -> str:
     if _processor is None or _model is None or _device is None:
         raise RuntimeError("Model not loaded. Call load_model() first.")
 
-    # librosa handles MP3, WAV, M4A, etc. and resamples to 16kHz
-    waveform, _ = librosa.load(io.BytesIO(audio_bytes), sr=16_000, mono=True)
+    # Try librosa directly first; fall back to ffmpeg for unsupported formats (webm, ogg, etc.)
+    try:
+        waveform, _ = librosa.load(io.BytesIO(audio_bytes), sr=16_000, mono=True)
+    except Exception:
+        # Convert to WAV via ffmpeg
+        with tempfile.NamedTemporaryFile(suffix=".input", delete=False) as tmp_in:
+            tmp_in.write(audio_bytes)
+            tmp_in.flush()
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_out:
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", tmp_in.name, "-ar", "16000", "-ac", "1", "-f", "wav", tmp_out.name],
+                    capture_output=True,
+                )
+                waveform, _ = librosa.load(tmp_out.name, sr=16_000, mono=True)
 
     input_features = _processor(
         waveform,
