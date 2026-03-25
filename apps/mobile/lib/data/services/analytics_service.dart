@@ -2,7 +2,7 @@ import 'package:plausible/plausible.dart';
 
 class AnalyticsService {
   static final _analytics = Plausible(
-    'rattil.app',
+    domain: 'rattil.app',
     server: Uri.parse('https://analytics.rattil.app'),
   );
 
