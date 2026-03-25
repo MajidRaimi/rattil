@@ -1,0 +1,16 @@
+procs:
+  web:
+    shell: "cd apps/web && bun dev --port 3000"
+    env:
+      FORCE_COLOR: "1"
+
+  api:
+    shell: "cd apps/api && uv run fastapi dev app/main.py --port 8000"
+    env:
+      FORCE_COLOR: "1"
+
+  mobile:
+    shell: "cd apps/mobile && flutter run"
+    env:
+      FORCE_COLOR: "1"
+    autostart: false

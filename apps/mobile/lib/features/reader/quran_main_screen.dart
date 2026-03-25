@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../data/services/analytics_service.dart';
+import '../../data/services/edge_tts_service.dart';
+import 'widgets/tajweed_legend.dart';
+import 'widgets/tajweed_verse.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -560,6 +565,61 @@ class _AppShellState extends ConsumerState<_AppShell> {
     );
   }
 
+  void _showTajweedSheet(
+      BuildContext parentCtx, int surahNumber, int verseNumber) {
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showModalBottomSheet(
+      context: parentCtx,
+      backgroundColor: colors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colors.surfaceHigh,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TajweedVerse(
+                surahNumber: surahNumber,
+                verseNumber: verseNumber,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TajweedLegend(isDark: isDark),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _localizedSurahName(int surahNumber) {
     final locale = Locales.currentLocale(context)?.languageCode ?? 'en';
     final prefix = Locales.string(context, 'surah_prefix');
@@ -567,7 +627,10 @@ class _AppShellState extends ConsumerState<_AppShell> {
     return '$prefix ${quran.getSurahName(surahNumber)}';
   }
 
+  final _showTajweedNotifier = ValueNotifier<bool>(false);
+
   void _onVerseLongPress(int surahNumber, int verseNumber) {
+    _showTajweedNotifier.value = false;
     // Show chrome if hidden
     if (!_showChrome) setState(() => _showChrome = true);
 
@@ -688,21 +751,10 @@ class _AppShellState extends ConsumerState<_AppShell> {
                               color: isBookmarked
                                   ? colors.gold
                                   : colors.textSecondary,
-                              size: 22,
+                              size: 20,
                             ),
                           );
                         },
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          _showTafseerSheet(
-                              ctx, surahNumber, verseNumber);
-                        },
-                        icon: Icon(
-                          Icons.menu_book_rounded,
-                          color: colors.textSecondary,
-                          size: 22,
-                        ),
                       ),
                       IconButton(
                         onPressed: () {
@@ -712,26 +764,92 @@ class _AppShellState extends ConsumerState<_AppShell> {
                         icon: Icon(
                           Icons.volume_up_rounded,
                           color: colors.textSecondary,
-                          size: 22,
+                          size: 20,
+                        ),
+                      ),
+                      ValueListenableBuilder<bool>(
+                        valueListenable: _showTajweedNotifier,
+                        builder: (_, show, __) => IconButton(
+                          onPressed: () {
+                            _showTajweedNotifier.value = !_showTajweedNotifier.value;
+                          },
+                          icon: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            transitionBuilder: (child, anim) =>
+                                ScaleTransition(scale: anim, child: child),
+                            child: Icon(
+                              show
+                                  ? Icons.translate_rounded
+                                  : Icons.auto_awesome_outlined,
+                              key: ValueKey(show),
+                              color: show ? colors.gold : colors.textSecondary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          _showTafseerSheet(
+                              ctx, surahNumber, verseNumber);
+                        },
+                        icon: Icon(
+                          Icons.menu_book_rounded,
+                          color: colors.textSecondary,
+                          size: 20,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Translation (scrollable)
+                  // Tajweed ↔ Translation (scrollable)
                   Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: colors.background,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          translation,
-                          style: typo.bodyLarge.copyWith(height: 1.8),
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _showTajweedNotifier,
+                      builder: (_, showTajweed, __) => SingleChildScrollView(
+                        controller: scrollController,
+                        child: AnimatedCrossFade(
+                          duration: const Duration(milliseconds: 300),
+                          sizeCurve: Curves.easeOutCubic,
+                          crossFadeState: showTajweed
+                              ? CrossFadeState.showFirst
+                              : CrossFadeState.showSecond,
+                          firstChild: Column(
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: colors.background,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: TajweedVerse(
+                                  surahNumber: surahNumber,
+                                  verseNumber: verseNumber,
+                                  isDark: Theme.of(context).brightness ==
+                                      Brightness.dark,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _TajweedAccordion(
+                                isDark: Theme.of(context).brightness ==
+                                    Brightness.dark,
+                                colors: colors,
+                              ),
+                            ],
+                          ),
+                          secondChild: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colors.background,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              translation,
+                              style: typo.bodyLarge.copyWith(height: 1.8),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -1301,6 +1419,60 @@ class _TafseerSheetState extends State<_TafseerSheet> {
   bool _loading = false;
   String? _error;
 
+  // TTS via Edge TTS + just_audio
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isSpeaking = false;
+  bool _ttsLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer.playerStateStream.listen((state) {
+      if (!mounted) return;
+      if (state.processingState == ProcessingState.completed) {
+        setState(() => _isSpeaking = false);
+      }
+    });
+  }
+
+  Future<void> _toggleTts() async {
+    if (_isSpeaking) {
+      await _audioPlayer.stop();
+      setState(() => _isSpeaking = false);
+      return;
+    }
+
+    if (_tafsirText == null || _tafsirText!.isEmpty || _ttsLoading) return;
+
+    final lang = _selectedSource?.language ?? 'en';
+
+    setState(() => _ttsLoading = true);
+    try {
+      final audioBytes = await EdgeTtsService.instance
+          .synthesize(_tafsirText!, language: lang);
+
+      if (!mounted || audioBytes.isEmpty) {
+        if (mounted) setState(() => _ttsLoading = false);
+        return;
+      }
+
+      // Write to temp file and play
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/tafsir_tts.mp3');
+      await file.writeAsBytes(audioBytes);
+
+      await _audioPlayer.setFilePath(file.path);
+      setState(() {
+        _ttsLoading = false;
+        _isSpeaking = true;
+      });
+      await _audioPlayer.play();
+    } catch (e) {
+      debugPrint('[EdgeTTS] error: $e');
+      if (mounted) setState(() { _ttsLoading = false; _isSpeaking = false; });
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -1311,6 +1483,12 @@ class _TafseerSheetState extends State<_TafseerSheet> {
   }
 
   Future<void> _loadTafsir(TafsirSource source) async {
+    // Stop audio if switching tafsir
+    if (_isSpeaking) {
+      await _audioPlayer.stop();
+      _isSpeaking = false;
+    }
+
     setState(() {
       _selectedSource = source;
       _loading = true;
@@ -1324,6 +1502,12 @@ class _TafseerSheetState extends State<_TafseerSheet> {
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   Widget _buildShimmerLoading(AppColorScheme colors) {
@@ -1372,7 +1556,9 @@ class _TafseerSheetState extends State<_TafseerSheet> {
               GestureDetector(
                 onTap: () {
                   if (_selectedSource != null) {
+                    _audioPlayer.stop();
                     setState(() {
+                      _isSpeaking = false;
                       _selectedSource = null;
                       _tafsirText = null;
                       _error = null;
@@ -1399,8 +1585,43 @@ class _TafseerSheetState extends State<_TafseerSheet> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              // Invisible spacer to balance the chevron and keep text centered
-              const SizedBox(width: 32),
+              // TTS play/stop button (only when tafsir text is loaded)
+              if (_tafsirText != null && _tafsirText!.isNotEmpty)
+                GestureDetector(
+                  onTap: _ttsLoading ? null : _toggleTts,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: _ttsLoading
+                        ? Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.gold,
+                            ),
+                          )
+                        : AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            transitionBuilder: (child, anim) =>
+                                ScaleTransition(scale: anim, child: child),
+                            child: Icon(
+                              _isSpeaking
+                                  ? Icons.stop_circle_rounded
+                                  : Icons.volume_up_rounded,
+                              key: ValueKey(_isSpeaking),
+                              color: _isSpeaking
+                                  ? colors.gold
+                                  : colors.textSecondary,
+                              size: 22,
+                            ),
+                          ),
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(width: 32),
             ],
           ),
           const SizedBox(height: 16),
@@ -1613,4 +1834,84 @@ class _WirdProgressPainter extends CustomPainter {
       oldDelegate.progress != progress ||
       oldDelegate.color != color ||
       oldDelegate.trackColor != trackColor;
+}
+
+class _TajweedAccordion extends StatefulWidget {
+  final bool isDark;
+  final dynamic colors;
+
+  const _TajweedAccordion({required this.isDark, required this.colors});
+
+  @override
+  State<_TajweedAccordion> createState() => _TajweedAccordionState();
+}
+
+class _TajweedAccordionState extends State<_TajweedAccordion> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: widget.colors.background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome_outlined,
+                    size: 16,
+                    color: widget.colors.gold,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    Locales.currentLocale(context)?.languageCode == 'ar'
+                        ? 'دليل ألوان التجويد'
+                        : 'Tajweed Color Guide',
+                    style: TextStyle(
+                      fontFamily: 'NeueFrutigerWorld',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: widget.colors.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: widget.colors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 250),
+            sizeCurve: Curves.easeOutCubic,
+            crossFadeState: _expanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: TajweedLegend(isDark: widget.isDark),
+            ),
+            secondChild: const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
 }
