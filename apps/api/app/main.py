@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, PlainTextResponse
 
-from app.routers import tasmi
+from app.routers import tasmi, tts
 from app.services import whisper_service
 
 
@@ -20,6 +20,7 @@ app = FastAPI(
 )
 
 app.include_router(tasmi.router)
+app.include_router(tts.router)
 
 
 @app.get("/health")
