@@ -2,13 +2,16 @@
 
 import { useTolgee } from "@tolgee/react";
 import { setLanguage } from "@/tolgee/language";
+import { trackEvent } from "@/lib/analytics";
 
 export function LangToggle() {
   const tolgee = useTolgee(["language"]);
   const lang = tolgee.getLanguage();
 
   function toggle() {
-    setLanguage(lang === "ar" ? "en" : "ar");
+    const newLang = lang === "ar" ? "en" : "ar";
+    trackEvent("Language Toggle", { to: newLang });
+    setLanguage(newLang);
   }
 
   return (

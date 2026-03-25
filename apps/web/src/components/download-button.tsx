@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useOs } from "@mantine/hooks";
 import { useState } from "react";
 import { AppStoreModal, APP_STORE_URL } from "./app-store-modal";
+import { trackEvent } from "@/lib/analytics";
 
 const AppleIcon = () => (
   <svg width="16" height="20" viewBox="0 0 814 1000" fill="currentColor">
@@ -27,9 +28,11 @@ export function DownloadButton({ className = "" }: { className?: string }) {
   const isAndroid = os === "android";
 
   function handleClick(e: React.MouseEvent) {
+    trackEvent("Download Click", { os: os || "unknown" });
     if (!isIos) {
       e.preventDefault();
       setShowQr(true);
+      trackEvent("QR Modal Open", { os: os || "unknown" });
     }
   }
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { flushSync } from "react-dom";
+import { trackEvent } from "@/lib/analytics";
 
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState(false);
@@ -36,6 +37,7 @@ export function ThemeToggle() {
 
     const applyTheme = () => {
       const newTheme = !isDark;
+      trackEvent("Theme Toggle", { to: newTheme ? "dark" : "light" });
       setIsDark(newTheme);
       document.documentElement.setAttribute(
         "data-theme",

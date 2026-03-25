@@ -105,6 +105,9 @@ export default async function RootLayout({
       className={`${neueFrutiger.variable} ${uthmanicHafs.variable} h-full`}
       {...(dataTheme ? { "data-theme": dataTheme } : {})}
     >
+      <head>
+          <script defer data-domain="rattil.app" src="https://analytics.rattil.app/js/script.tagged-events.outbound-links.pageview-props.js" data-platform="web" />
+        </head>
       <body className="min-h-full flex flex-col antialiased">
         <TolgeeNextProvider language={locale} staticData={staticData}>
           <SmoothScroll />

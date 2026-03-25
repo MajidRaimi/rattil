@@ -49,7 +49,7 @@ export function ContactSection() {
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           href="mailto:majidsraimi@gmail.com?subject=Rattil Feature Request"
-          className="relative flex-shrink-0 flex items-center gap-2 bg-white/15 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-white/25 transition-colors"
+          className="plausible-event-name=Contact+Click relative flex-shrink-0 flex items-center gap-2 bg-white/15 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-white/25 transition-colors"
         >
           {t("contact_cta")}
           <svg
