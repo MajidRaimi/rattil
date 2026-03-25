@@ -6,18 +6,18 @@ from fastapi.responses import StreamingResponse
 router = APIRouter(prefix="/tts", tags=["tts"])
 
 VOICE_MAP = {
-    "ar": "ar-SA-ZariyahNeural",
-    "en": "en-US-JennyNeural",
-    "bn": "bn-BD-NabanitaNeural",
-    "ur": "ur-PK-UzmaNeural",
-    "ru": "ru-RU-SvetlanaNeural",
-    "ku": "ar-SA-ZariyahNeural",
+    "ar": "ar-SA-HamedNeural",
+    "en": "en-US-GuyNeural",
+    "bn": "bn-BD-PradeepNeural",
+    "ur": "ur-PK-AsadNeural",
+    "ru": "ru-RU-DmitryNeural",
+    "ku": "ar-SA-HamedNeural",
 }
 
 
 @router.get("/speak")
 async def speak(
-    text: str = Query(..., max_length=5000),
+    text: str = Query(...),
     lang: str = Query("ar", max_length=5),
 ):
     voice = VOICE_MAP.get(lang, VOICE_MAP["en"])
