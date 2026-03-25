@@ -14,10 +14,7 @@ RUN uv sync --frozen --no-dev
 COPY app/ app/
 
 # Download model at build time so container starts fast
-RUN uv run python -c "from app.services.whisper_service import MODEL_ID; \
-    from transformers import WhisperProcessor, WhisperForConditionalGeneration; \
-    WhisperProcessor.from_pretrained(MODEL_ID); \
-    WhisperForConditionalGeneration.from_pretrained(MODEL_ID)"
+RUN uv run python -c "from app.services.whisper_service import MODEL_ID; from transformers import WhisperProcessor, WhisperForConditionalGeneration; WhisperProcessor.from_pretrained(MODEL_ID); WhisperForConditionalGeneration.from_pretrained(MODEL_ID)"
 
 EXPOSE 8000
 

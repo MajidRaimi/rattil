@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from app.routers import tasmi
 from app.services import whisper_service
@@ -25,6 +25,11 @@ app.include_router(tasmi.router)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/ping", response_class=PlainTextResponse)
+async def ping():
+    return "pong"
 
 
 @app.get("/test", response_class=HTMLResponse)
