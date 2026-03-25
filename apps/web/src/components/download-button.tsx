@@ -28,11 +28,11 @@ export function DownloadButton({ className = "" }: { className?: string }) {
   const isAndroid = os === "android";
 
   function handleClick(e: React.MouseEvent) {
-    trackEvent("Download Click", { os: os || "unknown" });
+    trackEvent("Download Click", { platform: "web", device: isIos || isAndroid ? "mobile" : "desktop" });
     if (!isIos) {
       e.preventDefault();
       setShowQr(true);
-      trackEvent("QR Modal Open", { os: os || "unknown" });
+      trackEvent("QR Modal Open", { platform: "web", device: isIos || isAndroid ? "mobile" : "desktop" });
     }
   }
 

@@ -37,7 +37,7 @@ export function ThemeToggle() {
 
     const applyTheme = () => {
       const newTheme = !isDark;
-      trackEvent("Theme Toggle", { to: newTheme ? "dark" : "light" });
+      trackEvent("Theme Toggle", { to: newTheme ? "dark" : "light", platform: "web" });
       setIsDark(newTheme);
       document.documentElement.setAttribute(
         "data-theme",

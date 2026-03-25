@@ -10,7 +10,7 @@ export function LangToggle() {
 
   function toggle() {
     const newLang = lang === "ar" ? "en" : "ar";
-    trackEvent("Language Toggle", { to: newLang });
+    trackEvent("Language Toggle", { to: newLang, platform: "web" });
     setLanguage(newLang);
   }
 
