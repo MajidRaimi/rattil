@@ -1,7 +1,7 @@
 name: quran_mobile
 description: "Offline-first Quran reading app"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+1
 
 environment:
   sdk: ^3.10.4
