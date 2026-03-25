@@ -51,7 +51,7 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 1.1 }}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
-          href="/#download"
+          href="https://apps.apple.com/us/app/rattil-%D8%B1%D8%AA%D9%84/id6760684737"
           className="mt-10 inline-flex items-center gap-2.5 bg-[var(--text-primary)] text-[var(--bg)] px-6 py-3 rounded-full text-sm font-medium transition-shadow hover:shadow-lg"
         >
           <svg width="16" height="20" viewBox="0 0 814 1000" fill="currentColor">

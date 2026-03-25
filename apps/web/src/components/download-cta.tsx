@@ -39,7 +39,7 @@ export function DownloadCta() {
             <motion.a
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              href="#"
+              href="https://apps.apple.com/us/app/rattil-%D8%B1%D8%AA%D9%84/id6760684737"
               className="inline-flex items-center gap-2.5 bg-[var(--text-primary)] text-[var(--bg)] px-5 py-2.5 rounded-xl text-sm font-medium transition-shadow hover:shadow-lg"
             >
               <svg width="18" height="22" viewBox="0 0 814 1000" fill="currentColor">
@@ -53,7 +53,7 @@ export function DownloadCta() {
             <motion.a
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              href="#"
+              href="https://apps.apple.com/us/app/rattil-%D8%B1%D8%AA%D9%84/id6760684737"
               className="inline-flex items-center gap-2.5 bg-[var(--text-primary)] text-[var(--bg)] px-5 py-2.5 rounded-xl text-sm font-medium transition-shadow hover:shadow-lg"
             >
               <svg width="18" height="20" viewBox="0 0 24 24" fill="currentColor">
