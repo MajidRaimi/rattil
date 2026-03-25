@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../data/services/analytics_service.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/typography_ext.dart';
@@ -95,6 +96,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {
       setState(() => _query = value.trim());
+      if (value.trim().isNotEmpty) {
+        AnalyticsService.event('Search', props: {'query_length': '${value.trim().length}'});
+      }
     });
   }
 

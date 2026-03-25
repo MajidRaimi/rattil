@@ -1,4 +1,5 @@
 import '../datasources/quran_local_datasource.dart';
+import '../services/analytics_service.dart';
 import '../models/surah.dart';
 import '../models/ayah.dart';
 import '../models/search_result.dart';
@@ -23,8 +24,10 @@ class QuranRepository {
   // Bookmarks
   Future<Set<String>> getBookmarkKeys() => _datasource.getBookmarkKeys();
   Future<List<Map<String, dynamic>>> getAllBookmarks() => _datasource.getAllBookmarks();
-  Future<void> addBookmark(int surahNumber, int ayahNumber) =>
-      _datasource.addBookmark(surahNumber, ayahNumber);
+  Future<void> addBookmark(int surahNumber, int ayahNumber) {
+    AnalyticsService.event('Bookmark Added', props: {'surah': '$surahNumber'});
+    return _datasource.addBookmark(surahNumber, ayahNumber);
+  }
   Future<void> removeBookmark(int surahNumber, int ayahNumber) =>
       _datasource.removeBookmark(surahNumber, ayahNumber);
 

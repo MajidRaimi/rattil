@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import '../../data/services/analytics_service.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -375,6 +376,7 @@ class _HifzPlayerScreenState extends ConsumerState<HifzPlayerScreen> {
   void _endSession() {
     _player.stop();
     _playbackGen++;
+    AnalyticsService.event('Tikrar Completed', props: {'surah': widget.session.surahNameEnglish});
     setState(() {
       _isPlaying = false;
       _sessionComplete = true;

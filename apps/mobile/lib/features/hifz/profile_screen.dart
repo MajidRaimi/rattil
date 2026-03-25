@@ -1,5 +1,6 @@
 import 'package:animated_flip_counter/animated_flip_counter.dart';
 import 'package:flutter/material.dart';
+import '../../data/services/analytics_service.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:progress_border/progress_border.dart';
@@ -256,6 +257,7 @@ class _HifzSessionsList extends ConsumerWidget {
   }
 
   void _resumeSession(BuildContext context, TikrarSession session) {
+    AnalyticsService.event('Tikrar Started', props: {'surah': session.surahNameEnglish});
     Navigator.push(
       context,
       MaterialPageRoute(

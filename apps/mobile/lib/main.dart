@@ -10,6 +10,7 @@ import 'package:quran_flutter/quran_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'data/services/home_widget_service.dart';
+import 'data/services/analytics_service.dart';
 import 'data/services/notification_service.dart';
 
 @pragma('vm:entry-point')
@@ -46,5 +47,7 @@ void main() async {
   HomeWidget.registerInteractivityCallback(homeWidgetBackgroundCallback);
   await HomeWidgetService.updateWidget();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  final lang = prefs.getString('language') ?? 'en';
+  AnalyticsService.event('App Opened', props: {'lang': lang});
   runApp(const ProviderScope(child: QuranApp()));
 }

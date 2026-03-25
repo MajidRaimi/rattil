@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../data/services/analytics_service.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -392,8 +393,11 @@ class _AppShellState extends ConsumerState<_AppShell> {
     );
   }
 
+  static const _tabNames = ['search', 'bookmarks', 'reader', 'profile', 'settings'];
+
   Future<void> _switchTab(int index) async {
     if (index == _activeTab || _transitioning) return;
+    AnalyticsService.screenView(_tabNames[index]);
 
     // Fade out
     setState(() => _transitioning = true);

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/services/analytics_service.dart';
 
 part 'wird_provider.g.dart';
 
@@ -61,6 +62,7 @@ class WirdConfigNotifier extends _$WirdConfigNotifier {
   }
 
   Future<void> setWird(int pageCount) async {
+    AnalyticsService.event('Wird Created', props: {'pages': '$pageCount'});
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kPageCount, pageCount);
     await prefs.setInt(_kCurrentStart, 1);
@@ -87,6 +89,7 @@ class WirdConfigNotifier extends _$WirdConfigNotifier {
 
   /// Called when today's wird is marked complete.
   Future<void> onWirdCompleted() async {
+    AnalyticsService.event('Wird Completed');
     final prefs = await SharedPreferences.getInstance();
     final today = DateTime.now().toIso8601String().substring(0, 10);
     await prefs.setString(_kLastCompletedDate, today);

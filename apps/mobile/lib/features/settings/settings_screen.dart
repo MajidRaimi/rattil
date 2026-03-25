@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_locales/flutter_locales.dart';
+import '../../data/services/analytics_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -335,6 +336,7 @@ class _ThemeChip extends ConsumerWidget {
             ref
                 .read(appThemeModeProvider.notifier)
                 .setThemeMode(targetMode);
+            AnalyticsService.event('Theme Changed', props: {'to': targetMode.name});
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -811,6 +813,7 @@ class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
                 return InkWell(
                   onTap: () {
                     Locales.change(context, lang.code);
+                    AnalyticsService.event('Language Changed', props: {'to': lang.code});
                     Navigator.of(context).pop();
                   },
                   borderRadius: BorderRadius.circular(12),
