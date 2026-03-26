@@ -47,6 +47,7 @@ dependencies:
   flutter_tts: ^4.2.5
   web_socket_channel: ^3.0.3
   crypto: ^3.0.7
+  record: ^6.2.0
 
 dev_dependencies:
   flutter_test:

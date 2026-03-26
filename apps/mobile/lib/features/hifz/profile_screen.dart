@@ -19,6 +19,8 @@ import '../home/widgets/surah_search_tile.dart';
 import '../tutorial/tutorial_keys.dart';
 import '../../providers/wird_provider.dart';
 import 'hifz_player_screen.dart';
+import 'tasmi_player_screen.dart';
+import '../../providers/tasmi_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -34,7 +36,7 @@ class ProfileScreenState extends ConsumerState<ProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -104,11 +106,13 @@ class ProfileScreenState extends ConsumerState<ProfileScreen>
                   ),
                   tabs: [
                     Text(Locales.string(context, 'hifz_tab')),
+                    Text(Locales.string(context, 'tasmi_tab')),
                     Text(Locales.string(context, 'wird_tab')),
                     Text(Locales.string(context, 'progress_tab')),
                   ],
                   children: [
                     _HifzTab(),
+                    _TasmiTab(),
                     Showcase(
                       key: TutorialKeys.wirdContent,
                       title: Locales.string(context, 'tutorial_wird_tab_title'),
@@ -2361,6 +2365,552 @@ class _SurahSection extends StatelessWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB 4 — Tasmi' (recitation checking)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _TasmiTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessions = ref.watch(tasmiSessionsProvider);
+    if (sessions.isEmpty) return _TasmiEmptyState();
+    return _TasmiSessionsList(sessions: sessions);
+  }
+}
+
+class _TasmiEmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.mic_rounded,
+              size: 56, color: colors.goldDim.withValues(alpha: 0.4)),
+          const SizedBox(height: 16),
+          Text(
+            Locales.string(context, 'tasmi_title'),
+            style: typo.titleMedium.copyWith(color: colors.textTertiary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            Locales.string(context, 'tasmi_subtitle'),
+            style: typo.bodySmall.copyWith(color: colors.textTertiary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: () => _showTasmiSurahSheet(context),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.gold),
+              ),
+              child: Text(
+                Locales.string(context, 'tasmi_start'),
+                style: typo.bodyMedium.copyWith(
+                  color: colors.gold,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TasmiSessionsList extends ConsumerWidget {
+  final List<TasmiSession> sessions;
+  const _TasmiSessionsList({required this.sessions});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final typo = context.typography;
+    final colors = context.colors;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        for (int i = 0; i < sessions.length; i++) ...[
+          _TasmiSessionCard(
+            session: sessions[i],
+            onResume: () {
+              AnalyticsService.event('Tasmi Started',
+                  props: {'surah': sessions[i].surahNameEnglish});
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TasmiPlayerScreen(session: sessions[i]),
+                ),
+              );
+            },
+            onDelete: () => ref
+                .read(tasmiSessionsProvider.notifier)
+                .deleteSession(sessions[i].id),
+          ),
+          if (i < sessions.length - 1) const SizedBox(height: 10),
+        ],
+        const SizedBox(height: 20),
+        Center(
+          child: GestureDetector(
+            onTap: () => _showTasmiSurahSheet(context),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.gold),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add_rounded, size: 18, color: colors.gold),
+                  const SizedBox(width: 6),
+                  Text(
+                    Locales.string(context, 'tasmi_new_session'),
+                    style: typo.bodyMedium.copyWith(
+                      color: colors.gold,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TasmiSessionCard extends StatelessWidget {
+  final TasmiSession session;
+  final VoidCallback onResume;
+  final VoidCallback onDelete;
+
+  const _TasmiSessionCard({
+    required this.session,
+    required this.onResume,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    final progressPercent = (session.progress * 100).toInt();
+
+    return Dismissible(
+      key: ValueKey(session.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete(),
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Icon(Icons.delete_outline_rounded,
+            color: Colors.red, size: 22),
+      ),
+      child: GestureDetector(
+        onTap: onResume,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          session.surahNameArabic,
+                          style: typo.arabicDisplay.copyWith(
+                            fontSize: 16,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          '${session.surahNameEnglish} · ${session.startVerse}-${session.endVerse}',
+                          style: typo.bodySmall
+                              .copyWith(color: colors.textTertiary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: colors.gold,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.mic_rounded,
+                        color: colors.background, size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: session.progress,
+                  backgroundColor: colors.divider,
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.gold),
+                  minHeight: 4,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '$progressPercent% · ${session.correctVerses}/${session.totalVerses} ${Locales.string(context, 'ayahs')}',
+                style: typo.bodySmall.copyWith(
+                  color: colors.textTertiary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _showTasmiSurahSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _TasmiSurahSheet(),
+  );
+}
+
+class _TasmiSurahSheet extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_TasmiSurahSheet> createState() => _TasmiSurahSheetState();
+}
+
+class _TasmiSurahSheetState extends ConsumerState<_TasmiSurahSheet> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    final surahsAsync = ref.watch(allSurahsProvider);
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.7,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  Locales.string(context, 'tikrar_select_surah'),
+                  style: typo.titleMedium.copyWith(color: colors.gold),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  onChanged: (v) => setState(() => _query = v),
+                  style: typo.bodyMedium.copyWith(color: colors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText:
+                        Locales.string(context, 'tikrar_search_surah'),
+                    hintStyle: typo.bodyMedium
+                        .copyWith(color: colors.textTertiary),
+                    prefixIcon: Icon(Icons.search_rounded,
+                        color: colors.textTertiary, size: 20),
+                    filled: true,
+                    fillColor: colors.background,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: surahsAsync.when(
+              data: (surahs) {
+                final filtered = _query.isEmpty
+                    ? surahs
+                    : surahs
+                        .where((s) =>
+                            s.nameEnglish
+                                .toLowerCase()
+                                .contains(_query.toLowerCase()) ||
+                            s.nameArabic.contains(_query))
+                        .toList();
+                return ListView.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (context, i) {
+                    final surah = filtered[i];
+                    return SurahSearchTile(
+                      surah: surah,
+                      onTap: () {
+                        Navigator.pop(context);
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) =>
+                              _TasmiConfigSheet(surah: surah),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+              loading: () =>
+                  Center(child: CircularProgressIndicator(color: colors.gold)),
+              error: (_, __) => Center(
+                child: Text(Locales.string(context, 'error_loading_surah'),
+                    style: typo.bodyMedium
+                        .copyWith(color: colors.textTertiary)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TasmiConfigSheet extends ConsumerStatefulWidget {
+  final Surah surah;
+  const _TasmiConfigSheet({required this.surah});
+
+  @override
+  ConsumerState<_TasmiConfigSheet> createState() => _TasmiConfigSheetState();
+}
+
+class _TasmiConfigSheetState extends ConsumerState<_TasmiConfigSheet> {
+  late int _startVerse;
+  late int _endVerse;
+  late final TextEditingController _startController;
+  late final TextEditingController _endController;
+
+  @override
+  void initState() {
+    super.initState();
+    _startVerse = 1;
+    _endVerse = widget.surah.ayahCount;
+    _startController = TextEditingController(text: '$_startVerse');
+    _endController = TextEditingController(text: '$_endVerse');
+  }
+
+  @override
+  void dispose() {
+    _startController.dispose();
+    _endController.dispose();
+    super.dispose();
+  }
+
+  void _updateStart(int delta) {
+    setState(() {
+      _startVerse = (_startVerse + delta).clamp(1, widget.surah.ayahCount);
+      if (_endVerse < _startVerse) _endVerse = _startVerse;
+      _startController.text = '$_startVerse';
+      _endController.text = '$_endVerse';
+    });
+  }
+
+  void _updateEnd(int delta) {
+    setState(() {
+      _endVerse =
+          (_endVerse + delta).clamp(_startVerse, widget.surah.ayahCount);
+      _endController.text = '$_endVerse';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    final verseCount = _endVerse - _startVerse + 1;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.surah.nameArabic,
+              style: typo.arabicDisplay.copyWith(color: colors.textPrimary),
+            ),
+            Text(
+              widget.surah.nameEnglish,
+              style: typo.bodyMedium.copyWith(color: colors.textSecondary),
+            ),
+            const SizedBox(height: 24),
+
+            // Start Verse
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                Locales.string(context, 'tikrar_start_verse').toUpperCase(),
+                style: typo.bodySmall.copyWith(
+                  color: colors.goldDim,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _NumberPickerRow(
+              controller: _startController,
+              onDecrement: () => _updateStart(-1),
+              onIncrement: () => _updateStart(1),
+              onChanged: (val) {
+                final n = int.tryParse(val);
+                if (n != null && n >= 1 && n <= widget.surah.ayahCount) {
+                  setState(() {
+                    _startVerse = n;
+                    if (_endVerse < _startVerse) {
+                      _endVerse = _startVerse;
+                      _endController.text = '$_endVerse';
+                    }
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // End Verse
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                Locales.string(context, 'tikrar_end_verse').toUpperCase(),
+                style: typo.bodySmall.copyWith(
+                  color: colors.goldDim,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _NumberPickerRow(
+              controller: _endController,
+              onDecrement: () => _updateEnd(-1),
+              onIncrement: () => _updateEnd(1),
+              onChanged: (val) {
+                final n = int.tryParse(val);
+                if (n != null &&
+                    n >= _startVerse &&
+                    n <= widget.surah.ayahCount) {
+                  setState(() => _endVerse = n);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Summary
+            Text(
+              '$verseCount ${Locales.string(context, 'tikrar_verses_label')}',
+              style: typo.bodyMedium.copyWith(color: colors.gold),
+            ),
+            const SizedBox(height: 24),
+
+            // Begin button
+            SizedBox(
+              width: double.infinity,
+              child: GestureDetector(
+                onTap: () async {
+                  final session = await ref
+                      .read(tasmiSessionsProvider.notifier)
+                      .createSession(
+                        surahNumber: widget.surah.number,
+                        surahNameArabic: widget.surah.nameArabic,
+                        surahNameEnglish: widget.surah.nameEnglish,
+                        startVerse: _startVerse,
+                        endVerse: _endVerse,
+                      );
+                  if (!context.mounted) return;
+                  AnalyticsService.event('Tasmi Started',
+                      props: {'surah': widget.surah.nameEnglish});
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TasmiPlayerScreen(session: session),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: colors.gold,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      Locales.string(context, 'tasmi_begin'),
+                      style: typo.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

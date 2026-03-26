@@ -203,5 +203,22 @@
   "tutorial_progress_tab_desc": "View your reading and memorization statistics",
   "tutorial_replay": "Replay Tutorial",
   "privacy_policy": "Privacy Policy",
-  "contact_support": "Contact Support"
+  "contact_support": "Contact Support",
+  "tasmi_tab": "Tasmi'",
+  "tasmi_title": "Tasmi'",
+  "tasmi_subtitle": "Test your memorization by reciting aloud",
+  "tasmi_start": "Start",
+  "tasmi_begin": "Begin",
+  "tasmi_recording": "Recording...",
+  "tasmi_processing": "Checking recitation...",
+  "tasmi_tap_to_recite": "Tap mic to recite",
+  "tasmi_correct": "Correct!",
+  "tasmi_retry": "Retry",
+  "tasmi_next_verse": "Next Verse",
+  "tasmi_complete": "Tasmi' Complete!",
+  "tasmi_done": "Done",
+  "tasmi_new_session": "New Session",
+  "tasmi_mic_permission": "Microphone permission is required",
+  "tasmi_verse": "Verse",
+  "tasmi_of": "of"
 }

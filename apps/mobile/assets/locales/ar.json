@@ -203,5 +203,22 @@
   "tutorial_progress_tab_desc": "شاهد إحصائيات القراءة والحفظ",
   "tutorial_replay": "إعادة الجولة التعريفية",
   "privacy_policy": "سياسة الخصوصية",
-  "contact_support": "تواصل مع الدعم"
+  "contact_support": "تواصل مع الدعم",
+  "tasmi_tab": "تسميع",
+  "tasmi_title": "تسميع",
+  "tasmi_subtitle": "اختبر حفظك بالتلاوة",
+  "tasmi_start": "ابدأ",
+  "tasmi_begin": "ابدأ",
+  "tasmi_recording": "جاري التسجيل...",
+  "tasmi_processing": "جاري التحقق...",
+  "tasmi_tap_to_recite": "اضغط على المايك للتلاوة",
+  "tasmi_correct": "صحيح!",
+  "tasmi_retry": "أعد المحاولة",
+  "tasmi_next_verse": "الآية التالية",
+  "tasmi_complete": "اكتمل التسميع!",
+  "tasmi_done": "تم",
+  "tasmi_new_session": "جلسة جديدة",
+  "tasmi_mic_permission": "يلزم إذن المايكروفون",
+  "tasmi_verse": "آية",
+  "tasmi_of": "من"
 }
