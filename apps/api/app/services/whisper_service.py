@@ -10,7 +10,7 @@ _model: WhisperModel | None = None
 
 def load_model() -> None:
     global _model
-    _model = WhisperModel(MODEL_DIR, device="cpu", compute_type="int8", cpu_threads=14)
+    _model = WhisperModel(MODEL_DIR, device="cpu", compute_type="int8", cpu_threads=8)
 
 
 def transcribe(audio_bytes: bytes) -> str:

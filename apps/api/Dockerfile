@@ -3,7 +3,7 @@ FROM python:3.12-slim AS converter
 
 RUN pip install --no-cache-dir faster-whisper torch transformers
 
-RUN ct2-transformers-converter --model deepdml/whisper-small-ar-quran-mix-norm --output_dir /model --quantization float16
+RUN ct2-transformers-converter --model deepdml/whisper-small-ar-quran-mix-norm --output_dir /model --quantization int8
 
 # Stage 2: Runtime (slim, no torch)
 FROM python:3.12-slim
