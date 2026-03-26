@@ -13,8 +13,8 @@ RUN uv sync --frozen --no-dev
 # Copy app code
 COPY app/ app/
 
-# Download model at build time so container starts fast
-RUN uv run python -c "from app.services.whisper_service import MODEL_ID; from transformers import WhisperProcessor, WhisperForConditionalGeneration; WhisperProcessor.from_pretrained(MODEL_ID); WhisperForConditionalGeneration.from_pretrained(MODEL_ID)"
+# Convert Quran Whisper model to CTranslate2 format at build time
+RUN uv run ct2-transformers-converter --model deepdml/whisper-medium-ar-quran-mix-norm --output_dir /api/model --quantization float16
 
 EXPOSE 8000
 
