@@ -1,4 +1,5 @@
-import io
+from typing import AsyncGenerator
+
 import edge_tts
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
@@ -15,22 +16,21 @@ VOICE_MAP = {
 }
 
 
+async def _stream_audio(text: str, voice: str) -> AsyncGenerator[bytes, None]:
+    communicate = edge_tts.Communicate(text, voice)
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            yield chunk["data"]
+
+
 @router.get("/speak")
 async def speak(
     text: str = Query(...),
     lang: str = Query("ar", max_length=5),
 ):
     voice = VOICE_MAP.get(lang, VOICE_MAP["en"])
-    communicate = edge_tts.Communicate(text, voice)
-
-    buffer = io.BytesIO()
-    async for chunk in communicate.stream():
-        if chunk["type"] == "audio":
-            buffer.write(chunk["data"])
-
-    buffer.seek(0)
     return StreamingResponse(
-        buffer,
+        _stream_audio(text, voice),
         media_type="audio/mpeg",
         headers={"Content-Disposition": "inline; filename=tts.mp3"},
     )
