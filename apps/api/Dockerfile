@@ -1,3 +1,11 @@
+# Stage 1: Convert model (needs torch + transformers)
+FROM python:3.12-slim AS converter
+
+RUN pip install --no-cache-dir faster-whisper torch transformers
+
+RUN ct2-transformers-converter --model deepdml/whisper-medium-ar-quran-mix-norm --output_dir /model --quantization float16
+
+# Stage 2: Runtime (slim, no torch)
 FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg curl && rm -rf /var/lib/apt/lists/*
@@ -6,15 +14,13 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /api
 
-# Install deps first (cached layer)
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
-# Copy app code
 COPY app/ app/
 
-# Convert Quran Whisper model to CTranslate2 format at build time
-RUN uv run ct2-transformers-converter --model deepdml/whisper-medium-ar-quran-mix-norm --output_dir /api/model --quantization float16
+# Copy converted model from builder
+COPY --from=converter /model /api/model
 
 EXPOSE 8000
 
