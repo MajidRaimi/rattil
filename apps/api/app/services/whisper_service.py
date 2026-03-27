@@ -20,7 +20,13 @@ def transcribe(audio_bytes: bytes) -> str:
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         tmp.write(audio_bytes)
         tmp.flush()
-        segments, _ = _model.transcribe(tmp.name, language="ar")
+        segments, _ = _model.transcribe(
+            tmp.name,
+            language="ar",
+            beam_size=1,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500),
+        )
         text = " ".join(s.text for s in segments).strip()
 
     # Remove any Whisper special tokens

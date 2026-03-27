@@ -9,6 +9,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../core/theme/typography_ext.dart';
 import '../../data/models/ayah.dart';
 import '../../providers/quran_providers.dart';
+import '../bookmarks/widgets/save_to_collection_sheet.dart';
 import 'widgets/page_picker_sheet.dart';
 import 'widgets/surah_picker_sheet.dart';
 import 'widgets/juz_picker_sheet.dart';
@@ -525,22 +526,35 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   ),
                 ],
                 const Spacer(),
-                IconButton(
-                  onPressed: () =>
-                      _toggleBookmark(ayah.surahNumber, ayah.ayahNumber),
-                  icon: Icon(
-                    isBookmarked
-                        ? Icons.bookmark
-                        : Icons.bookmark_border,
-                    color: isBookmarked
-                        ? colors.gold
-                        : colors.textTertiary,
-                    size: 20,
+                GestureDetector(
+                  onLongPress: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => SaveToCollectionSheet(
+                        surahNumber: ayah.surahNumber,
+                        ayahNumber: ayah.ayahNumber,
+                      ),
+                    );
+                  },
+                  child: IconButton(
+                    onPressed: () =>
+                        _toggleBookmark(ayah.surahNumber, ayah.ayahNumber),
+                    icon: Icon(
+                      isBookmarked
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      color: isBookmarked
+                          ? colors.gold
+                          : colors.textTertiary,
+                      size: 20,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 36, minHeight: 36),
                   ),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
               ],
             ),

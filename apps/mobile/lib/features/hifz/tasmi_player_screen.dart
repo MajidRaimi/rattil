@@ -56,10 +56,12 @@ class _TasmiPlayerScreenState extends ConsumerState<TasmiPlayerScreen> {
   StreamSubscription? _audioStreamSub;
   final _pcmBuffer = BytesBuilder(copy: false);
   Timer? _silenceTimer;
+  Timer? _maxRecordingTimer;
   bool _hasDetectedSpeech = false;
-  static const _silenceThresholdDb = -30.0;
+  static const _silenceThresholdDb = -35.0;
   static const _silenceDuration = Duration(milliseconds: 1500);
-  static const _gracePeriod = Duration(seconds: 2);
+  static const _gracePeriod = Duration(seconds: 1);
+  static const _maxRecordingDuration = Duration(seconds: 10);
   static const _sampleRate = 16000;
   DateTime? _recordingStartTime;
 
@@ -75,6 +77,7 @@ class _TasmiPlayerScreenState extends ConsumerState<TasmiPlayerScreen> {
   void dispose() {
     _toastEntry?.remove();
     _silenceTimer?.cancel();
+    _maxRecordingTimer?.cancel();
     _audioStreamSub?.cancel();
     _recorder.dispose();
     _scrollController.dispose();
@@ -188,6 +191,7 @@ class _TasmiPlayerScreenState extends ConsumerState<TasmiPlayerScreen> {
 
   void _stopSession() {
     _silenceTimer?.cancel();
+    _maxRecordingTimer?.cancel();
     _audioStreamSub?.cancel();
     _recorder.cancel();
     _pcmBuffer.clear();
@@ -297,7 +301,6 @@ class _TasmiPlayerScreenState extends ConsumerState<TasmiPlayerScreen> {
     _audioStreamSub = stream.listen((chunk) {
       _pcmBuffer.add(chunk);
 
-      // Calculate amplitude from this chunk
       final db = _calculateAmplitudeDb(Uint8List.fromList(chunk));
       final elapsed = DateTime.now().difference(_recordingStartTime!);
 
@@ -314,6 +317,13 @@ class _TasmiPlayerScreenState extends ConsumerState<TasmiPlayerScreen> {
             _onSilenceDetected();
           }
         });
+      }
+    });
+
+    // Safety: stop recording after max duration regardless of silence detection
+    _maxRecordingTimer = Timer(_maxRecordingDuration, () {
+      if (_isRecording && !_isProcessing) {
+        _onSilenceDetected();
       }
     });
 
@@ -336,6 +346,8 @@ class _TasmiPlayerScreenState extends ConsumerState<TasmiPlayerScreen> {
 
     _silenceTimer?.cancel();
     _silenceTimer = null;
+    _maxRecordingTimer?.cancel();
+    _maxRecordingTimer = null;
     _audioStreamSub?.cancel();
     await _recorder.stop();
 

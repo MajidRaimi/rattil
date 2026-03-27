@@ -45,6 +45,28 @@ class QuranLocalDatasource {
       )
     ''');
 
+    // Create bookmark collections tables
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS bookmark_collections (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        icon_name TEXT NOT NULL DEFAULT 'bookmark',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS bookmark_collection_entries (
+        collection_id INTEGER NOT NULL,
+        surah_number INTEGER NOT NULL,
+        ayah_number INTEGER NOT NULL,
+        added_at TEXT NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (collection_id, surah_number, ayah_number),
+        FOREIGN KEY (collection_id) REFERENCES bookmark_collections(id) ON DELETE CASCADE
+      )
+    ''');
+
     return db;
   }
 
@@ -145,6 +167,114 @@ class QuranLocalDatasource {
       where: 'surah_number = ? AND ayah_number = ?',
       whereArgs: [surahNumber, ayahNumber],
     );
+  }
+
+  // Bookmark Collections
+  Future<List<Map<String, dynamic>>> getAllCollections() async {
+    final db = await database;
+    return db.rawQuery('''
+      SELECT c.*, COUNT(e.collection_id) as bookmark_count
+      FROM bookmark_collections c
+      LEFT JOIN bookmark_collection_entries e ON e.collection_id = c.id
+      GROUP BY c.id
+      ORDER BY c.sort_order, c.created_at
+    ''');
+  }
+
+  Future<int> createCollection(String title, String iconName) async {
+    final db = await database;
+    return db.insert('bookmark_collections', {
+      'title': title,
+      'icon_name': iconName,
+    });
+  }
+
+  Future<void> updateCollection(int id, String title, String iconName) async {
+    final db = await database;
+    await db.update(
+      'bookmark_collections',
+      {'title': title, 'icon_name': iconName},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<void> deleteCollection(int id) async {
+    final db = await database;
+    await db.delete('bookmark_collection_entries',
+        where: 'collection_id = ?', whereArgs: [id]);
+    await db.delete('bookmark_collections',
+        where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> addBookmarkToCollection(
+      int collectionId, int surahNumber, int ayahNumber) async {
+    final db = await database;
+    await db.insert(
+      'bookmark_collection_entries',
+      {
+        'collection_id': collectionId,
+        'surah_number': surahNumber,
+        'ayah_number': ayahNumber,
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  Future<void> removeBookmarkFromCollection(
+      int collectionId, int surahNumber, int ayahNumber) async {
+    final db = await database;
+    await db.delete(
+      'bookmark_collection_entries',
+      where: 'collection_id = ? AND surah_number = ? AND ayah_number = ?',
+      whereArgs: [collectionId, surahNumber, ayahNumber],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getBookmarksByCollection(
+      int collectionId) async {
+    final db = await database;
+    return db.rawQuery('''
+      SELECT b.id, b.surah_number, b.ayah_number, b.created_at,
+             s.name_arabic, s.name_english,
+             a.text_uthmani, t.text as translation
+      FROM bookmark_collection_entries e
+      JOIN bookmarks b ON b.surah_number = e.surah_number AND b.ayah_number = e.ayah_number
+      JOIN surahs s ON s.number = b.surah_number
+      JOIN ayahs a ON a.surah_number = b.surah_number AND a.ayah_number = b.ayah_number
+      LEFT JOIN translations t ON t.surah_number = b.surah_number AND t.ayah_number = b.ayah_number
+      WHERE e.collection_id = ?
+      ORDER BY e.added_at DESC
+    ''', [collectionId]);
+  }
+
+  Future<Set<int>> getCollectionIdsForBookmark(
+      int surahNumber, int ayahNumber) async {
+    final db = await database;
+    final results = await db.query(
+      'bookmark_collection_entries',
+      columns: ['collection_id'],
+      where: 'surah_number = ? AND ayah_number = ?',
+      whereArgs: [surahNumber, ayahNumber],
+    );
+    return results.map((r) => r['collection_id'] as int).toSet();
+  }
+
+  /// Returns a map of "surah:ayah" -> list of icon_name strings
+  Future<Map<String, List<String>>> getAllBookmarkCollectionIcons() async {
+    final db = await database;
+    final results = await db.rawQuery('''
+      SELECT e.surah_number, e.ayah_number, c.icon_name
+      FROM bookmark_collection_entries e
+      JOIN bookmark_collections c ON c.id = e.collection_id
+      ORDER BY e.surah_number, e.ayah_number
+    ''');
+    final map = <String, List<String>>{};
+    for (final r in results) {
+      final key = '${r['surah_number']}:${r['ayah_number']}';
+      (map[key] ??= []).add(r['icon_name'] as String);
+    }
+    return map;
   }
 
   // Page metadata (juz/hizb)
@@ -305,6 +435,8 @@ class QuranLocalDatasource {
   Future<void> clearAllUserData() async {
     final db = await database;
     final batch = db.batch();
+    batch.delete('bookmark_collection_entries');
+    batch.delete('bookmark_collections');
     batch.delete('bookmarks');
     batch.delete('hifz_pages');
     batch.delete('wird_completions');

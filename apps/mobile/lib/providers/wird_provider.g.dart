@@ -7,7 +7,7 @@ part of 'wird_provider.dart';
 // **************************************************************************
 
 String _$wirdConfigNotifierHash() =>
-    r'e0cc42aa806037cc7a1dc0390cd42e1638b57e0e';
+    r'ea5dab0f2aa337f198c22c25b5693b671f7cd879';
 
 /// See also [WirdConfigNotifier].
 @ProviderFor(WirdConfigNotifier)

@@ -24,6 +24,7 @@ import '../../data/services/tafseer_service.dart';
 import '../../providers/quran_providers.dart';
 import '../../providers/tutorial_provider.dart';
 import '../bookmarks/bookmarks_screen.dart';
+import '../bookmarks/widgets/save_to_collection_sheet.dart';
 import '../hifz/profile_screen.dart';
 import '../search/search_screen.dart';
 import '../settings/settings_screen.dart';
@@ -731,27 +732,40 @@ class _AppShellState extends ConsumerState<_AppShell> {
                                     keys.contains('$surahNumber:$verseNumber'),
                               ) ??
                               false;
-                          return IconButton(
-                            onPressed: () async {
-                              final repo = ref2.read(quranRepositoryProvider);
-                              if (isBookmarked) {
-                                await repo.removeBookmark(
-                                    surahNumber, verseNumber);
-                              } else {
-                                await repo.addBookmark(
-                                    surahNumber, verseNumber);
-                              }
-                              ref2.invalidate(bookmarkKeysProvider);
-                              ref2.invalidate(allBookmarksProvider);
+                          return GestureDetector(
+                            onLongPress: () {
+                              showModalBottomSheet(
+                                context: ctx2,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => SaveToCollectionSheet(
+                                  surahNumber: surahNumber,
+                                  ayahNumber: verseNumber,
+                                ),
+                              );
                             },
-                            icon: Icon(
-                              isBookmarked
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_border,
-                              color: isBookmarked
-                                  ? colors.gold
-                                  : colors.textSecondary,
-                              size: 20,
+                            child: IconButton(
+                              onPressed: () async {
+                                final repo = ref2.read(quranRepositoryProvider);
+                                if (isBookmarked) {
+                                  await repo.removeBookmark(
+                                      surahNumber, verseNumber);
+                                } else {
+                                  await repo.addBookmark(
+                                      surahNumber, verseNumber);
+                                }
+                                ref2.invalidate(bookmarkKeysProvider);
+                                ref2.invalidate(allBookmarksProvider);
+                              },
+                              icon: Icon(
+                                isBookmarked
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: isBookmarked
+                                    ? colors.gold
+                                    : colors.textSecondary,
+                                size: 20,
+                              ),
                             ),
                           );
                         },

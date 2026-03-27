@@ -31,6 +31,32 @@ class QuranRepository {
   Future<void> removeBookmark(int surahNumber, int ayahNumber) =>
       _datasource.removeBookmark(surahNumber, ayahNumber);
 
+  // Bookmark Collections
+  Future<List<Map<String, dynamic>>> getAllCollections() =>
+      _datasource.getAllCollections();
+  Future<int> createCollection(String title, String iconName) {
+    AnalyticsService.event('Collection Created', props: {'title': title});
+    return _datasource.createCollection(title, iconName);
+  }
+  Future<void> updateCollection(int id, String title, String iconName) =>
+      _datasource.updateCollection(id, title, iconName);
+  Future<void> deleteCollection(int id) => _datasource.deleteCollection(id);
+  Future<void> addBookmarkToCollection(
+          int collectionId, int surahNumber, int ayahNumber) =>
+      _datasource.addBookmarkToCollection(collectionId, surahNumber, ayahNumber);
+  Future<void> removeBookmarkFromCollection(
+          int collectionId, int surahNumber, int ayahNumber) =>
+      _datasource.removeBookmarkFromCollection(
+          collectionId, surahNumber, ayahNumber);
+  Future<List<Map<String, dynamic>>> getBookmarksByCollection(
+          int collectionId) =>
+      _datasource.getBookmarksByCollection(collectionId);
+  Future<Set<int>> getCollectionIdsForBookmark(
+          int surahNumber, int ayahNumber) =>
+      _datasource.getCollectionIdsForBookmark(surahNumber, ayahNumber);
+  Future<Map<String, List<String>>> getAllBookmarkCollectionIcons() =>
+      _datasource.getAllBookmarkCollectionIcons();
+
   // Hifz (memorization tracking)
   Future<Set<int>> getMemorizedPages() => _datasource.getMemorizedPages();
   Future<bool> togglePageMemorized(int page) =>

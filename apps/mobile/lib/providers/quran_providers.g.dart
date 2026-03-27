@@ -366,6 +366,312 @@ final allBookmarksProvider =
 // ignore: unused_element
 typedef AllBookmarksRef =
     AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
+String _$allCollectionsHash() => r'574e8135131df90c51dced414f9104db64fb0e32';
+
+/// See also [allCollections].
+@ProviderFor(allCollections)
+final allCollectionsProvider =
+    AutoDisposeFutureProvider<List<Map<String, dynamic>>>.internal(
+      allCollections,
+      name: r'allCollectionsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$allCollectionsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef AllCollectionsRef =
+    AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
+String _$collectionBookmarksHash() =>
+    r'f6074dbfb3c93509b08ac39c3bdfb95ec9c0e97f';
+
+/// See also [collectionBookmarks].
+@ProviderFor(collectionBookmarks)
+const collectionBookmarksProvider = CollectionBookmarksFamily();
+
+/// See also [collectionBookmarks].
+class CollectionBookmarksFamily
+    extends Family<AsyncValue<List<Map<String, dynamic>>>> {
+  /// See also [collectionBookmarks].
+  const CollectionBookmarksFamily();
+
+  /// See also [collectionBookmarks].
+  CollectionBookmarksProvider call(int collectionId) {
+    return CollectionBookmarksProvider(collectionId);
+  }
+
+  @override
+  CollectionBookmarksProvider getProviderOverride(
+    covariant CollectionBookmarksProvider provider,
+  ) {
+    return call(provider.collectionId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'collectionBookmarksProvider';
+}
+
+/// See also [collectionBookmarks].
+class CollectionBookmarksProvider
+    extends AutoDisposeFutureProvider<List<Map<String, dynamic>>> {
+  /// See also [collectionBookmarks].
+  CollectionBookmarksProvider(int collectionId)
+    : this._internal(
+        (ref) =>
+            collectionBookmarks(ref as CollectionBookmarksRef, collectionId),
+        from: collectionBookmarksProvider,
+        name: r'collectionBookmarksProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$collectionBookmarksHash,
+        dependencies: CollectionBookmarksFamily._dependencies,
+        allTransitiveDependencies:
+            CollectionBookmarksFamily._allTransitiveDependencies,
+        collectionId: collectionId,
+      );
+
+  CollectionBookmarksProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.collectionId,
+  }) : super.internal();
+
+  final int collectionId;
+
+  @override
+  Override overrideWith(
+    FutureOr<List<Map<String, dynamic>>> Function(
+      CollectionBookmarksRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: CollectionBookmarksProvider._internal(
+        (ref) => create(ref as CollectionBookmarksRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        collectionId: collectionId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<List<Map<String, dynamic>>> createElement() {
+    return _CollectionBookmarksProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is CollectionBookmarksProvider &&
+        other.collectionId == collectionId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, collectionId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin CollectionBookmarksRef
+    on AutoDisposeFutureProviderRef<List<Map<String, dynamic>>> {
+  /// The parameter `collectionId` of this provider.
+  int get collectionId;
+}
+
+class _CollectionBookmarksProviderElement
+    extends AutoDisposeFutureProviderElement<List<Map<String, dynamic>>>
+    with CollectionBookmarksRef {
+  _CollectionBookmarksProviderElement(super.provider);
+
+  @override
+  int get collectionId => (origin as CollectionBookmarksProvider).collectionId;
+}
+
+String _$bookmarkCollectionIdsHash() =>
+    r'af15692fe92cedcc76b68590ff02d55612f3a8b0';
+
+/// See also [bookmarkCollectionIds].
+@ProviderFor(bookmarkCollectionIds)
+const bookmarkCollectionIdsProvider = BookmarkCollectionIdsFamily();
+
+/// See also [bookmarkCollectionIds].
+class BookmarkCollectionIdsFamily extends Family<AsyncValue<Set<int>>> {
+  /// See also [bookmarkCollectionIds].
+  const BookmarkCollectionIdsFamily();
+
+  /// See also [bookmarkCollectionIds].
+  BookmarkCollectionIdsProvider call(int surahNumber, int ayahNumber) {
+    return BookmarkCollectionIdsProvider(surahNumber, ayahNumber);
+  }
+
+  @override
+  BookmarkCollectionIdsProvider getProviderOverride(
+    covariant BookmarkCollectionIdsProvider provider,
+  ) {
+    return call(provider.surahNumber, provider.ayahNumber);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'bookmarkCollectionIdsProvider';
+}
+
+/// See also [bookmarkCollectionIds].
+class BookmarkCollectionIdsProvider
+    extends AutoDisposeFutureProvider<Set<int>> {
+  /// See also [bookmarkCollectionIds].
+  BookmarkCollectionIdsProvider(int surahNumber, int ayahNumber)
+    : this._internal(
+        (ref) => bookmarkCollectionIds(
+          ref as BookmarkCollectionIdsRef,
+          surahNumber,
+          ayahNumber,
+        ),
+        from: bookmarkCollectionIdsProvider,
+        name: r'bookmarkCollectionIdsProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$bookmarkCollectionIdsHash,
+        dependencies: BookmarkCollectionIdsFamily._dependencies,
+        allTransitiveDependencies:
+            BookmarkCollectionIdsFamily._allTransitiveDependencies,
+        surahNumber: surahNumber,
+        ayahNumber: ayahNumber,
+      );
+
+  BookmarkCollectionIdsProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.surahNumber,
+    required this.ayahNumber,
+  }) : super.internal();
+
+  final int surahNumber;
+  final int ayahNumber;
+
+  @override
+  Override overrideWith(
+    FutureOr<Set<int>> Function(BookmarkCollectionIdsRef provider) create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: BookmarkCollectionIdsProvider._internal(
+        (ref) => create(ref as BookmarkCollectionIdsRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        surahNumber: surahNumber,
+        ayahNumber: ayahNumber,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<Set<int>> createElement() {
+    return _BookmarkCollectionIdsProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is BookmarkCollectionIdsProvider &&
+        other.surahNumber == surahNumber &&
+        other.ayahNumber == ayahNumber;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, surahNumber.hashCode);
+    hash = _SystemHash.combine(hash, ayahNumber.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin BookmarkCollectionIdsRef on AutoDisposeFutureProviderRef<Set<int>> {
+  /// The parameter `surahNumber` of this provider.
+  int get surahNumber;
+
+  /// The parameter `ayahNumber` of this provider.
+  int get ayahNumber;
+}
+
+class _BookmarkCollectionIdsProviderElement
+    extends AutoDisposeFutureProviderElement<Set<int>>
+    with BookmarkCollectionIdsRef {
+  _BookmarkCollectionIdsProviderElement(super.provider);
+
+  @override
+  int get surahNumber => (origin as BookmarkCollectionIdsProvider).surahNumber;
+  @override
+  int get ayahNumber => (origin as BookmarkCollectionIdsProvider).ayahNumber;
+}
+
+String _$bookmarkCollectionIconsHash() =>
+    r'0eee308958d7ffcf8c84307124bf7716b7e2b283';
+
+/// See also [bookmarkCollectionIcons].
+@ProviderFor(bookmarkCollectionIcons)
+final bookmarkCollectionIconsProvider =
+    AutoDisposeFutureProvider<Map<String, List<String>>>.internal(
+      bookmarkCollectionIcons,
+      name: r'bookmarkCollectionIconsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$bookmarkCollectionIconsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef BookmarkCollectionIconsRef =
+    AutoDisposeFutureProviderRef<Map<String, List<String>>>;
 String _$memorizedPagesHash() => r'845d797fe77decebd9b6dc447445ed0d69ed1f92';
 
 /// See also [memorizedPages].

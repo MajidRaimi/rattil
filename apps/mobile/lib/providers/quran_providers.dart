@@ -68,6 +68,29 @@ Future<List<Map<String, dynamic>>> allBookmarks(ref) {
 }
 
 @riverpod
+Future<List<Map<String, dynamic>>> allCollections(ref) {
+  return ref.watch(quranRepositoryProvider).getAllCollections();
+}
+
+@riverpod
+Future<List<Map<String, dynamic>>> collectionBookmarks(
+    ref, int collectionId) {
+  return ref.watch(quranRepositoryProvider).getBookmarksByCollection(collectionId);
+}
+
+@riverpod
+Future<Set<int>> bookmarkCollectionIds(
+    ref, int surahNumber, int ayahNumber) {
+  return ref.watch(quranRepositoryProvider).getCollectionIdsForBookmark(
+      surahNumber, ayahNumber);
+}
+
+@riverpod
+Future<Map<String, List<String>>> bookmarkCollectionIcons(ref) {
+  return ref.watch(quranRepositoryProvider).getAllBookmarkCollectionIcons();
+}
+
+@riverpod
 Future<Set<int>> memorizedPages(ref) {
   return ref.watch(quranRepositoryProvider).getMemorizedPages();
 }
