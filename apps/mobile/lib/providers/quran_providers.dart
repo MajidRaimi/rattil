@@ -115,6 +115,11 @@ Future<bool> wirdCompletedToday(ref) {
   return ref.watch(quranRepositoryProvider).isWirdCompletedToday();
 }
 
+@riverpod
+Future<bool> khatmahCompletedToday(ref) {
+  return ref.watch(quranRepositoryProvider).isKhatmahCompletedToday();
+}
+
 bool _containsArabic(String text) =>
     RegExp(r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]')
         .hasMatch(text);

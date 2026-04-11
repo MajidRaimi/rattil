@@ -30,6 +30,7 @@ import '../search/search_screen.dart';
 import '../settings/settings_screen.dart';
 import '../tutorial/tutorial_keys.dart';
 import '../../providers/wird_provider.dart';
+import '../../providers/khatmah_provider.dart';
 import 'widgets/page_picker_sheet.dart';
 import 'widgets/surah_picker_sheet.dart';
 import 'widgets/juz_picker_sheet.dart';
@@ -112,7 +113,8 @@ class _AppShell extends ConsumerStatefulWidget {
   ConsumerState<_AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<_AppShell> {
+class _AppShellState extends ConsumerState<_AppShell>
+    with WidgetsBindingObserver {
   int _activeTab = _kQuranTab;
   late int _currentPage;
   bool _showChrome = false;
@@ -131,8 +133,28 @@ class _AppShellState extends ConsumerState<_AppShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentPage = widget.initialPage;
     _loadPageMetadata(widget.initialPage);
+    // Show khatmah resume prompt after app fully renders
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted && _activeTab == _kQuranTab) {
+        _maybeShowKhatmahResume();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _activeTab == _kQuranTab) {
+      _maybeShowKhatmahResume();
+    }
   }
 
   void _startTutorial() {
@@ -175,7 +197,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
       });
     } else if (_tutorialPhase == 3) {
       // Profile tabs shown → switch to Wird tab
-      TutorialKeys.profileScreen.currentState?.switchToTab(1);
+      TutorialKeys.profileScreen.currentState?.switchToTab(2);
       setState(() => _tutorialPhase = 4);
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
@@ -183,8 +205,8 @@ class _AppShellState extends ConsumerState<_AppShell> {
         }
       });
     } else if (_tutorialPhase == 4) {
-      // Wird shown → switch to Progress tab
-      TutorialKeys.profileScreen.currentState?.switchToTab(2);
+      // Wird shown → switch to Khatmah tab
+      TutorialKeys.profileScreen.currentState?.switchToTab(3);
       setState(() => _tutorialPhase = 5);
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
@@ -192,6 +214,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
         }
       });
     } else if (_tutorialPhase == 5) {
+      // Khatmah shown → switch to Progress tab
+      TutorialKeys.profileScreen.currentState?.switchToTab(4);
+      setState(() => _tutorialPhase = 6);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          ShowCaseWidget.of(_showcaseContext!).startShowCase(TutorialKeys.phase6Steps);
+        }
+      });
+    } else if (_tutorialPhase == 6) {
       // All phases done
       ref.read(tutorialStatusProvider.notifier).markCompleted();
       setState(() {
@@ -259,6 +290,8 @@ class _AppShellState extends ConsumerState<_AppShell> {
     ));
   }
 
+  bool _khatmahDayDialogShown = false;
+
   void _onPageChanged(int page) {
     setState(() => _currentPage = page);
     _loadPageMetadata(page);
@@ -271,6 +304,132 @@ class _AppShellState extends ConsumerState<_AppShell> {
           .updateReadingProgress(firstSurah, firstVerse);
       ref.invalidate(readingProgressProvider);
     }
+    final khatmahPaused = ref.read(khatmahConfigNotifierProvider)?.paused ?? false;
+    if (!khatmahPaused) {
+      ref.read(khatmahConfigNotifierProvider.notifier).updateLastReadPage(page);
+      _checkKhatmahDayComplete(page);
+    }
+  }
+
+  void _checkKhatmahDayComplete(int page) {
+    final khatmah = ref.read(khatmahConfigNotifierProvider);
+    if (khatmah == null || khatmah.isComplete) return;
+    if (khatmah.completedDays >= khatmah.currentDay) return; // already done
+    if (page != khatmah.todayEndPage + 1) {
+      _khatmahDayDialogShown = false;
+      return;
+    }
+    if (_khatmahDayDialogShown) return;
+    _khatmahDayDialogShown = true;
+
+    final colors = context.colors;
+    final typo = context.typography;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 400),
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+      transitionBuilder: (ctx, animation, secondaryAnimation, child) {
+        final curvedAnim = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        );
+        return ScaleTransition(
+          scale: curvedAnim,
+          child: FadeTransition(
+            opacity: animation,
+            child: AlertDialog(
+              backgroundColor: colors.surface,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 600),
+                    curve: Curves.elasticOut,
+                    builder: (context, value, child) => Transform.scale(
+                      scale: value,
+                      child: child,
+                    ),
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colors.gold.withValues(alpha: 0.12),
+                      ),
+                      child: Icon(Icons.check_rounded,
+                          size: 40, color: colors.gold),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    Locales.string(context, 'khatmah_day_done_title'),
+                    style: typo.titleMedium.copyWith(
+                      color: colors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    Locales.string(context, 'khatmah_day_done_subtitle'),
+                    style: typo.bodySmall.copyWith(color: colors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        ref
+                            .read(khatmahConfigNotifierProvider.notifier)
+                            .onDayCompleted();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: colors.gold,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Center(
+                          child: Text(
+                            Locales.string(context, 'khatmah_day_done_mark'),
+                            style: typo.bodyMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        Locales.string(context, 'khatmah_cancel'),
+                        style:
+                            typo.bodyMedium.copyWith(color: colors.textTertiary),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String get _currentSurahName {
@@ -325,6 +484,253 @@ class _AppShellState extends ConsumerState<_AppShell> {
         ),
       ),
     ),
+    );
+  }
+
+  Widget _buildKhatmahChip(AppColorScheme colors) {
+    final khatmah = ref.watch(khatmahConfigNotifierProvider);
+    if (khatmah?.paused == true) return const SizedBox.shrink();
+    if (khatmah == null || khatmah.isComplete) return const SizedBox.shrink();
+    if (khatmah.completedDays >= khatmah.currentDay) return const SizedBox.shrink();
+    final inKhatmah = _currentPage >= khatmah.todayStartPage && _currentPage <= khatmah.todayEndPage;
+
+    final totalPages = khatmah.todayEndPage - khatmah.todayStartPage + 1;
+    final pagesIn = (_currentPage - khatmah.todayStartPage + 1).clamp(0, totalPages);
+    final progress = pagesIn / totalPages;
+
+    return GestureDetector(
+      onTap: () => _showKhatmahChipMenu(colors),
+      child: Opacity(
+        opacity: inKhatmah ? 1.0 : 0.5,
+        child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: inKhatmah ? progress : 0),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+        builder: (context, value, child) {
+          return CustomPaint(
+            painter: _WirdProgressPainter(
+              progress: value,
+              color: colors.gold,
+              trackColor: colors.gold.withValues(alpha: 0.2),
+            ),
+            child: child,
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            color: colors.gold.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            Locales.string(context, 'khatmah_daily'),
+            style: TextStyle(
+              fontFamily: 'NeueFrutigerWorld',
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: colors.gold,
+            ),
+          ),
+        ),
+      ),
+      ),
+    );
+  }
+
+  void _showKhatmahChipMenu(AppColorScheme colors) {
+    final khatmah = ref.read(khatmahConfigNotifierProvider);
+    if (khatmah == null) return;
+    final typo = context.typography;
+    final inKhatmah = _currentPage >= khatmah.todayStartPage &&
+        _currentPage <= khatmah.todayEndPage;
+
+    final totalPages = khatmah.todayEndPage - khatmah.todayStartPage + 1;
+    final pagesRead = inKhatmah
+        ? (_currentPage - khatmah.todayStartPage + 1).clamp(0, totalPages)
+        : 0;
+    final dailyProgress = pagesRead / totalPages;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Icon + Title ──
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colors.gold.withValues(alpha: 0.1),
+              ),
+              child: Icon(Icons.menu_book_rounded, size: 28, color: colors.gold),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              Locales.string(context, 'khatmah_daily'),
+              style: typo.titleMedium.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${Locales.string(context, 'khatmah_day_of')} ${khatmah.currentDay} / ${khatmah.totalDays}',
+              style: typo.bodySmall.copyWith(color: colors.textTertiary),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Today's Progress Card ──
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF0D0D0D)
+                    : const Color(0xFFF7F5F0),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.divider),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${Locales.string(context, 'page')} ${khatmah.todayStartPage} – ${khatmah.todayEndPage}',
+                        style: typo.bodyMedium.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${inKhatmah ? _currentPage : (khatmah.lastReadPage ?? khatmah.todayStartPage)} / 604',
+                        style: typo.bodySmall.copyWith(color: colors.textTertiary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: (inKhatmah ? _currentPage : (khatmah.lastReadPage ?? khatmah.todayStartPage)) / 604,
+                      backgroundColor: colors.gold.withValues(alpha: 0.15),
+                      valueColor: AlwaysStoppedAnimation<Color>(colors.gold),
+                      minHeight: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${khatmah.pagesPerDay} ${Locales.string(context, 'khatmah_pages_per_day')}',
+                        style: typo.bodySmall.copyWith(color: colors.textTertiary),
+                      ),
+                      Text(
+                        '${((inKhatmah ? _currentPage : (khatmah.lastReadPage ?? khatmah.todayStartPage)) / 604 * 100).round()}%',
+                        style: typo.bodySmall.copyWith(
+                          color: colors.gold,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Resume / Continue button ──
+            SizedBox(
+              width: double.infinity,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  if (!inKhatmah) {
+                    final pageNum =
+                        khatmah.lastReadPage ?? khatmah.todayStartPage;
+                    final verseData = quran.getPageData(pageNum);
+                    if (verseData.isNotEmpty) {
+                      final first = verseData.first;
+                      ref.read(readerNavigationProvider.notifier).state =
+                          ReaderNavigationRequest(
+                        surahNumber: first['surah'] as int,
+                        ayahNumber: first['start'] as int,
+                      );
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: colors.gold,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      inKhatmah
+                          ? Locales.string(context, 'khatmah_read')
+                          : (khatmah.lastReadPage != null
+                              ? Locales.string(context, 'khatmah_resume')
+                              : Locales.string(context, 'khatmah_go_to_start')),
+                      style: typo.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Not Now ──
+            SizedBox(
+              width: double.infinity,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ref.read(khatmahConfigNotifierProvider.notifier).updateLastReadPage(_currentPage);
+                  ref.read(khatmahConfigNotifierProvider.notifier).pauseKhatmah();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colors.divider),
+                  ),
+                  child: Center(
+                    child: Text(
+                      Locales.string(context, 'khatmah_not_now'),
+                      style: typo.bodyMedium.copyWith(
+                        color: colors.textTertiary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -422,6 +828,19 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
     // Fade in
     setState(() => _transitioning = false);
+
+    // Show khatmah resume prompt when switching to Quran tab
+    if (index == _kQuranTab) {
+      _maybeShowKhatmahResume();
+    }
+  }
+
+  void _maybeShowKhatmahResume() {
+    final khatmah = ref.read(khatmahConfigNotifierProvider);
+    if (khatmah?.paused == true) return;
+    if (khatmah == null || khatmah.isComplete) return;
+    if (khatmah.completedDays >= khatmah.currentDay) return;
+    _showKhatmahChipMenu(context.colors);
   }
 
   @override
@@ -936,6 +1355,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
                             ),
                             const SizedBox(width: 8),
                             _buildWirdChip(colors),
+                            _buildKhatmahChip(colors),
                           ],
                         ),
                         const SizedBox(height: 2),

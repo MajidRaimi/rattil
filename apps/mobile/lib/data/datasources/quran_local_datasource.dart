@@ -45,6 +45,14 @@ class QuranLocalDatasource {
       )
     ''');
 
+    // Create khatmah completion tracking table
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS khatmah_completions (
+        date TEXT PRIMARY KEY,
+        completed_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    ''');
+
     // Create bookmark collections tables
     await db.execute('''
       CREATE TABLE IF NOT EXISTS bookmark_collections (
@@ -432,6 +440,37 @@ class QuranLocalDatasource {
     }
   }
 
+  // ── Khatmah (complete Quran reading tracking) ──
+
+  Future<bool> isKhatmahCompletedToday() async {
+    final db = await database;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final results = await db.query(
+      'khatmah_completions',
+      where: 'date = ?',
+      whereArgs: [today],
+    );
+    return results.isNotEmpty;
+  }
+
+  /// Toggles today's khatmah completion. Returns `true` if now completed.
+  Future<bool> toggleKhatmahCompletion() async {
+    final db = await database;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final existing = await db.query(
+      'khatmah_completions',
+      where: 'date = ?',
+      whereArgs: [today],
+    );
+    if (existing.isNotEmpty) {
+      await db.delete('khatmah_completions', where: 'date = ?', whereArgs: [today]);
+      return false;
+    } else {
+      await db.insert('khatmah_completions', {'date': today});
+      return true;
+    }
+  }
+
   Future<void> clearAllUserData() async {
     final db = await database;
     final batch = db.batch();
@@ -440,6 +479,7 @@ class QuranLocalDatasource {
     batch.delete('bookmarks');
     batch.delete('hifz_pages');
     batch.delete('wird_completions');
+    batch.delete('khatmah_completions');
     batch.update(
       'reading_progress',
       {
