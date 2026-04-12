@@ -22,6 +22,7 @@ class TutorialKeys {
   static final profileScreen = GlobalKey<ProfileScreenState>();
   static final profileTabs = GlobalKey();
   static final wirdContent = GlobalKey();
+  static final khatmahContent = GlobalKey();
   static final progressContent = GlobalKey();
 
   static List<GlobalKey> get phase1Steps => [
@@ -46,6 +47,9 @@ class TutorialKeys {
   // Phase 4: Wird tab
   static List<GlobalKey> get phase4Steps => [wirdContent];
 
-  // Phase 5: Progress tab
-  static List<GlobalKey> get phase5Steps => [progressContent];
+  // Phase 5: Khatmah tab
+  static List<GlobalKey> get phase5Steps => [khatmahContent];
+
+  // Phase 6: Progress tab
+  static List<GlobalKey> get phase6Steps => [progressContent];
 }

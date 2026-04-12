@@ -74,6 +74,12 @@ class QuranRepository {
   Future<bool> isWirdCompletedToday() => _datasource.isWirdCompletedToday();
   Future<bool> toggleWirdCompletion() => _datasource.toggleWirdCompletion();
 
+  // Khatmah (complete Quran reading tracking)
+  Future<bool> isKhatmahCompletedToday() =>
+      _datasource.isKhatmahCompletedToday();
+  Future<bool> toggleKhatmahCompletion() =>
+      _datasource.toggleKhatmahCompletion();
+
   // Clear all user data
   Future<void> clearAllUserData() => _datasource.clearAllUserData();
 

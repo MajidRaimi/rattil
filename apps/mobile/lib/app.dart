@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/home_widget_service.dart';
@@ -14,7 +15,8 @@ class QuranApp extends ConsumerStatefulWidget {
   ConsumerState<QuranApp> createState() => _QuranAppState();
 }
 
-class _QuranAppState extends ConsumerState<QuranApp> with WidgetsBindingObserver {
+class _QuranAppState extends ConsumerState<QuranApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();

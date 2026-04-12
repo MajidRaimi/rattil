@@ -764,6 +764,24 @@ final wirdCompletedTodayProvider = AutoDisposeFutureProvider<bool>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef WirdCompletedTodayRef = AutoDisposeFutureProviderRef<bool>;
+String _$khatmahCompletedTodayHash() =>
+    r'2df1a3452aaf6ff50e7160954c9796cfec3443b8';
+
+/// See also [khatmahCompletedToday].
+@ProviderFor(khatmahCompletedToday)
+final khatmahCompletedTodayProvider = AutoDisposeFutureProvider<bool>.internal(
+  khatmahCompletedToday,
+  name: r'khatmahCompletedTodayProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$khatmahCompletedTodayHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef KhatmahCompletedTodayRef = AutoDisposeFutureProviderRef<bool>;
 String _$searchResultsHash() => r'e7732f45dcf7c7171c17bbad219310b81b5d818e';
 
 /// See also [searchResults].

@@ -18,6 +18,7 @@ import '../../providers/tikrar_provider.dart';
 import '../home/widgets/surah_search_tile.dart';
 import '../tutorial/tutorial_keys.dart';
 import '../../providers/wird_provider.dart';
+import '../../providers/khatmah_provider.dart';
 import 'hifz_player_screen.dart';
 import 'tasmi_player_screen.dart';
 import '../../providers/tasmi_provider.dart';
@@ -36,7 +37,7 @@ class ProfileScreenState extends ConsumerState<ProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -108,6 +109,7 @@ class ProfileScreenState extends ConsumerState<ProfileScreen>
                     Text(Locales.string(context, 'hifz_tab')),
                     Text(Locales.string(context, 'tasmi_tab')),
                     Text(Locales.string(context, 'wird_tab')),
+                    Text(Locales.string(context, 'khatmah_tab')),
                     Text(Locales.string(context, 'progress_tab')),
                   ],
                   children: [
@@ -123,6 +125,17 @@ class ProfileScreenState extends ConsumerState<ProfileScreen>
                       targetBorderRadius: BorderRadius.circular(16),
                       overlayOpacity: 0.75,
                       child: _WirdTab(),
+                    ),
+                    Showcase(
+                      key: TutorialKeys.khatmahContent,
+                      title: Locales.string(context, 'tutorial_khatmah_tab_title'),
+                      description: Locales.string(context, 'tutorial_khatmah_tab_desc'),
+                      tooltipBackgroundColor: colors.surface,
+                      titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+                      descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+                      targetBorderRadius: BorderRadius.circular(16),
+                      overlayOpacity: 0.75,
+                      child: _KhatmahTab(),
                     ),
                     Showcase(
                       key: TutorialKeys.progressContent,
@@ -1555,6 +1568,1097 @@ class _NumberPickerRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAB — Khatmah (complete Quran reading)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _KhatmahTab extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final config = ref.watch(khatmahConfigNotifierProvider);
+    if (config == null) return _KhatmahEmptyState();
+    if (config.isComplete) return _KhatmahCompleteState();
+    return _KhatmahActiveState(config: config);
+  }
+}
+
+class _KhatmahEmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.menu_book_rounded,
+              size: 56, color: colors.goldDim.withValues(alpha: 0.4)),
+          const SizedBox(height: 16),
+          Text(
+            Locales.string(context, 'khatmah_set_title'),
+            style: typo.titleMedium.copyWith(color: colors.textTertiary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            Locales.string(context, 'khatmah_set_subtitle'),
+            style: typo.bodySmall.copyWith(color: colors.textTertiary),
+          ),
+          const SizedBox(height: 24),
+          GestureDetector(
+            onTap: () => _showSetKhatmahSheet(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colors.gold),
+              ),
+              child: Text(
+                Locales.string(context, 'khatmah_set_button'),
+                style: typo.bodyMedium.copyWith(
+                  color: colors.gold,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KhatmahCompleteState extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_KhatmahCompleteState> createState() =>
+      _KhatmahCompleteStateState();
+}
+
+class _KhatmahCompleteStateState extends ConsumerState<_KhatmahCompleteState>
+    with TickerProviderStateMixin {
+  late final AnimationController _iconController;
+  late final AnimationController _contentController;
+  late final Animation<double> _iconScale;
+  late final Animation<double> _contentFade;
+  late final Animation<Offset> _contentSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _iconController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _iconScale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.2), weight: 60),
+      TweenSequenceItem(tween: Tween(begin: 1.2, end: 0.9), weight: 20),
+      TweenSequenceItem(tween: Tween(begin: 0.9, end: 1.0), weight: 20),
+    ]).animate(CurvedAnimation(
+      parent: _iconController,
+      curve: Curves.easeOut,
+    ));
+
+    _contentController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _contentFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _contentController, curve: Curves.easeOut),
+    );
+    _contentSlide = Tween<Offset>(
+      begin: const Offset(0, 0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _contentController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _iconController.forward();
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) _contentController.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _iconController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Animated Icon ──
+            ScaleTransition(
+              scale: _iconScale,
+              child: Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colors.gold.withValues(alpha: 0.12),
+                ),
+                child: Icon(Icons.check_rounded,
+                    size: 52, color: colors.gold),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Animated Content ──
+            SlideTransition(
+              position: _contentSlide,
+              child: FadeTransition(
+                opacity: _contentFade,
+                child: Column(
+                  children: [
+                    Text(
+                      Locales.string(context, 'khatmah_complete_title'),
+                      style: typo.headlineMedium.copyWith(
+                        color: colors.gold,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      Locales.string(context, 'khatmah_complete_subtitle'),
+                      style: typo.bodyMedium.copyWith(
+                        color: colors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // ── New Khatmah Button ──
+                    SizedBox(
+                      width: double.infinity,
+                      child: GestureDetector(
+                        onTap: () => _showSetKhatmahSheet(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: colors.gold,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              Locales.string(context, 'khatmah_new'),
+                              style: typo.bodyMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ── End Khatmah Button ──
+                    SizedBox(
+                      width: double.infinity,
+                      child: GestureDetector(
+                        onTap: () => ref
+                            .read(khatmahConfigNotifierProvider.notifier)
+                            .clearKhatmah(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: colors.divider),
+                          ),
+                          child: Center(
+                            child: Text(
+                              Locales.string(context, 'khatmah_clear'),
+                              style: typo.bodyMedium.copyWith(
+                                color: colors.textTertiary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KhatmahActiveState extends ConsumerStatefulWidget {
+  final KhatmahConfig config;
+  const _KhatmahActiveState({required this.config});
+
+  @override
+  ConsumerState<_KhatmahActiveState> createState() =>
+      _KhatmahActiveStateState();
+}
+
+class _KhatmahActiveStateState extends ConsumerState<_KhatmahActiveState>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _checkController;
+  late final Animation<double> _scaleAnim;
+
+  KhatmahConfig get config => widget.config;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _scaleAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.3, end: 0.9), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.9, end: 1.0), weight: 30),
+    ]).animate(CurvedAnimation(
+      parent: _checkController,
+      curve: Curves.easeOut,
+    ));
+    if (config.completedDays >= config.currentDay) {
+      _checkController.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _checkController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    final isDone = config.completedDays >= config.currentDay;
+
+    final estimatedEnd = config.estimatedEndDate;
+    final endFormatted =
+        '${estimatedEnd.year}-${estimatedEnd.month.toString().padLeft(2, '0')}-${estimatedEnd.day.toString().padLeft(2, '0')}';
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // ── Khatmah Card ──
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF0D0D0D)
+                : const Color(0xFFF7F5F0),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: colors.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    Locales.string(context, 'khatmah_daily').toUpperCase(),
+                    style: typo.bodySmall.copyWith(
+                      color: colors.goldDim,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${Locales.string(context, 'khatmah_day_of')} ${config.currentDay} / ${config.totalDays}',
+                    style: typo.bodySmall.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${Locales.string(context, 'page')} ${config.todayStartPage} – ${config.todayEndPage}',
+                          style: typo.headlineMedium.copyWith(
+                            color: colors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${config.pagesPerDay} ${Locales.string(context, 'khatmah_pages_per_day')}',
+                          style: typo.bodySmall.copyWith(
+                            color: colors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      final notifier =
+                          ref.read(khatmahConfigNotifierProvider.notifier);
+                      if (isDone) {
+                        _checkController.reverse();
+                        await notifier.onDayUncompleted();
+                      } else {
+                        _checkController.forward(from: 0.0);
+                        await notifier.onDayCompleted();
+                      }
+                    },
+                    child: ScaleTransition(
+                      scale: _scaleAnim,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDone ? colors.gold : Colors.transparent,
+                          border: Border.all(
+                            color: colors.gold,
+                            width: 2,
+                          ),
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (child, anim) => ScaleTransition(
+                            scale: anim,
+                            child: child,
+                          ),
+                          child: isDone
+                              ? const Icon(Icons.check_rounded,
+                                  key: ValueKey('check'),
+                                  color: Colors.white,
+                                  size: 28)
+                              : const SizedBox.shrink(
+                                  key: ValueKey('empty')),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (config.lastReadPage != null && !isDone) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.bookmark_rounded,
+                        size: 14, color: colors.gold.withValues(alpha: 0.6)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${Locales.string(context, 'page')} ${config.lastReadPage}',
+                      style: typo.bodySmall.copyWith(
+                        color: colors.gold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) => ScaleTransition(
+                      scale: anim,
+                      child: child,
+                    ),
+                    child: Icon(
+                      isDone
+                          ? Icons.check_circle_rounded
+                          : Icons.circle_outlined,
+                      key: ValueKey(isDone),
+                      size: 16,
+                      color: isDone ? colors.gold : colors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      Locales.string(
+                        context,
+                        isDone ? 'khatmah_completed' : 'khatmah_not_completed',
+                      ),
+                      key: ValueKey(isDone),
+                      style: typo.bodySmall.copyWith(
+                        color: isDone ? colors.gold : colors.textTertiary,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      ref.read(khatmahConfigNotifierProvider.notifier).resumeKhatmah();
+                      final pageNum = config.lastReadPage ?? config.todayStartPage;
+                      final verseData = quran.getPageData(pageNum);
+                      if (verseData.isNotEmpty) {
+                        final first = verseData.first;
+                        ref.read(readerNavigationProvider.notifier).state =
+                            ReaderNavigationRequest(
+                          surahNumber: first['surah'] as int,
+                          ayahNumber: first['start'] as int,
+                        );
+                      }
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          Locales.string(context, 'khatmah_read'),
+                          style: typo.bodyMedium.copyWith(
+                            color: colors.gold,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(Icons.chevron_right_rounded,
+                            color: colors.gold, size: 20),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // ── Overall Progress ──
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                Locales.string(context, 'khatmah_progress').toUpperCase(),
+                style: typo.bodySmall.copyWith(
+                  color: colors.goldDim,
+                  letterSpacing: 1.2,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: config.overallProgress),
+                duration: const Duration(milliseconds: 800),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, _) => ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: value,
+                    backgroundColor: colors.gold.withValues(alpha: 0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(colors.gold),
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  AnimatedFlipCounter(
+                    value: (config.overallProgress * 100).round(),
+                    suffix: '%',
+                    duration: const Duration(milliseconds: 600),
+                    textStyle: typo.bodySmall.copyWith(
+                      color: colors.gold,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedFlipCounter(
+                        value: config.completedPages,
+                        duration: const Duration(milliseconds: 600),
+                        textStyle: typo.bodySmall.copyWith(
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                      Text(
+                        ' / 604',
+                        style: typo.bodySmall.copyWith(
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // ── Estimated completion ──
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.divider),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today_rounded,
+                    color: colors.textSecondary, size: 22),
+                const SizedBox(width: 12),
+                Text(
+                  Locales.string(context, 'khatmah_estimated_end'),
+                  style: typo.bodyMedium.copyWith(
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  endFormatted,
+                  style: typo.bodyMedium.copyWith(
+                    color: colors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // ── Reminder row ──
+        Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colors.divider),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _showKhatmahReminderPicker(context, ref),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Icon(Icons.notifications_outlined,
+                      color: colors.textSecondary, size: 22),
+                  const SizedBox(width: 12),
+                  Text(
+                    Locales.string(context, 'khatmah_reminder'),
+                    style: typo.bodyMedium.copyWith(
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    config.hasReminder
+                        ? _formatTime(config.reminderHour!, config.reminderMinute!)
+                        : Locales.string(context, 'khatmah_reminder_off'),
+                    style: typo.bodyMedium.copyWith(
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right_rounded,
+                      color: colors.textTertiary, size: 20),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // ── Actions ──
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => _showEditKhatmahSheet(context),
+              child: Text(
+                Locales.string(context, 'khatmah_change'),
+                style: typo.bodyMedium.copyWith(
+                  color: colors.gold,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => _showKhatmahClearConfirmation(context, ref),
+              child: Text(
+                Locales.string(context, 'khatmah_clear'),
+                style: typo.bodyMedium.copyWith(
+                  color: colors.textTertiary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(int hour, int minute) {
+    final h = hour % 12 == 0 ? 12 : hour % 12;
+    final period = hour < 12 ? 'AM' : 'PM';
+    return '${h.toString()}:${minute.toString().padLeft(2, '0')} $period';
+  }
+
+  void _showKhatmahReminderPicker(BuildContext context, WidgetRef ref) async {
+    final config = ref.read(khatmahConfigNotifierProvider);
+    final initial = config?.hasReminder == true
+        ? TimeOfDay(hour: config!.reminderHour!, minute: config.reminderMinute!)
+        : TimeOfDay.now();
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            textTheme: Theme.of(context).textTheme.apply(
+                  fontFamily: 'NeueFrutigerWorld',
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      await NotificationService.requestPermission();
+      await ref
+          .read(khatmahConfigNotifierProvider.notifier)
+          .setReminder(picked.hour, picked.minute);
+      await NotificationService.scheduleDailyWirdReminder(
+        picked.hour,
+        picked.minute,
+        title: Locales.string(context, 'khatmah_notification_title'),
+        body: Locales.string(context, 'khatmah_notification_body'),
+      );
+    }
+  }
+
+  void _showKhatmahClearConfirmation(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
+    final typo = context.typography;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          Locales.string(context, 'khatmah_clear'),
+          style: typo.titleMedium.copyWith(color: colors.textPrimary),
+        ),
+        content: Text(
+          Locales.string(context, 'khatmah_clear_confirm'),
+          style: typo.bodyMedium.copyWith(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              Locales.string(context, 'khatmah_cancel'),
+              style: typo.bodyMedium.copyWith(color: colors.textTertiary),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref
+                  .read(khatmahConfigNotifierProvider.notifier)
+                  .clearKhatmah();
+            },
+            child: Text(
+              Locales.string(context, 'khatmah_confirm'),
+              style: typo.bodyMedium.copyWith(color: colors.gold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void _showEditKhatmahSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const _EditKhatmahSheet(),
+  );
+}
+
+void _showSetKhatmahSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const _SetKhatmahSheet(),
+  );
+}
+
+class _SetKhatmahSheet extends ConsumerStatefulWidget {
+  const _SetKhatmahSheet();
+
+  @override
+  ConsumerState<_SetKhatmahSheet> createState() => _SetKhatmahSheetState();
+}
+
+class _SetKhatmahSheetState extends ConsumerState<_SetKhatmahSheet> {
+  late final TextEditingController _controller;
+  int _totalDays = 30;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: '$_totalDays');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _update(int delta) {
+    setState(() {
+      _totalDays = (_totalDays + delta).clamp(1, 365);
+      _controller.text = '$_totalDays';
+    });
+  }
+
+  void _setPreset(int days) {
+    setState(() {
+      _totalDays = days;
+      _controller.text = '$_totalDays';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    final pagesPerDay = (604 / _totalDays).ceil();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colors.divider,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            Locales.string(context, 'khatmah_set_title'),
+            style: typo.headlineMedium.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            Locales.string(context, 'khatmah_set_subtitle'),
+            style: typo.bodySmall.copyWith(color: colors.textTertiary),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Presets ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [10, 15, 30, 60].map((days) {
+              final selected = _totalDays == days;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: GestureDetector(
+                  onTap: () => _setPreset(days),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? colors.gold
+                          : colors.gold.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$days',
+                      style: typo.bodySmall.copyWith(
+                        color: selected ? Colors.white : colors.gold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Custom number picker ──
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              Locales.string(context, 'khatmah_days').toUpperCase(),
+              style: typo.bodySmall.copyWith(
+                color: colors.goldDim,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _NumberPickerRow(
+            controller: _controller,
+            onDecrement: () => _update(-1),
+            onIncrement: () => _update(1),
+            onChanged: (val) {
+              final n = int.tryParse(val);
+              if (n != null && n >= 1 && n <= 365) {
+                setState(() => _totalDays = n);
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '$pagesPerDay ${Locales.string(context, 'khatmah_pages_per_day')}',
+            style: typo.bodyMedium.copyWith(color: colors.gold),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: GestureDetector(
+              onTap: () {
+                ref
+                    .read(khatmahConfigNotifierProvider.notifier)
+                    .startKhatmah(_totalDays);
+                Navigator.pop(context);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: colors.gold,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    Locales.string(context, 'khatmah_set_button'),
+                    style: typo.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditKhatmahSheet extends ConsumerStatefulWidget {
+  const _EditKhatmahSheet();
+
+  @override
+  ConsumerState<_EditKhatmahSheet> createState() => _EditKhatmahSheetState();
+}
+
+class _EditKhatmahSheetState extends ConsumerState<_EditKhatmahSheet> {
+  late final TextEditingController _controller;
+  int _totalDays = 30;
+
+  @override
+  void initState() {
+    super.initState();
+    final config = ref.read(khatmahConfigNotifierProvider);
+    _totalDays = config?.totalDays ?? 30;
+    _controller = TextEditingController(text: '$_totalDays');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _update(int delta) {
+    setState(() {
+      _totalDays = (_totalDays + delta).clamp(1, 365);
+      _controller.text = '$_totalDays';
+    });
+  }
+
+  void _setPreset(int days) {
+    setState(() {
+      _totalDays = days;
+      _controller.text = '$_totalDays';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+    final pagesPerDay = (604 / _totalDays).ceil();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colors.divider,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            Locales.string(context, 'khatmah_change'),
+            style: typo.headlineMedium.copyWith(
+              color: colors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Presets ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [10, 15, 30, 60].map((days) {
+              final selected = _totalDays == days;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: GestureDetector(
+                  onTap: () => _setPreset(days),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? colors.gold
+                          : colors.gold.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$days',
+                      style: typo.bodySmall.copyWith(
+                        color: selected ? Colors.white : colors.gold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Custom number picker ──
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              Locales.string(context, 'khatmah_days').toUpperCase(),
+              style: typo.bodySmall.copyWith(
+                color: colors.goldDim,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _NumberPickerRow(
+            controller: _controller,
+            onDecrement: () => _update(-1),
+            onIncrement: () => _update(1),
+            onChanged: (val) {
+              final n = int.tryParse(val);
+              if (n != null && n >= 1 && n <= 365) {
+                setState(() => _totalDays = n);
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '$pagesPerDay ${Locales.string(context, 'khatmah_pages_per_day')}',
+            style: typo.bodyMedium.copyWith(color: colors.gold),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: GestureDetector(
+              onTap: () {
+                ref
+                    .read(khatmahConfigNotifierProvider.notifier)
+                    .editKhatmah(_totalDays);
+                Navigator.pop(context);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: colors.gold,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    Locales.string(context, 'khatmah_confirm'),
+                    style: typo.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

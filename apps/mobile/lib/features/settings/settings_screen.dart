@@ -13,6 +13,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/tikrar_provider.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../providers/wird_provider.dart';
+import '../../providers/khatmah_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -145,6 +146,7 @@ class SettingsScreen extends ConsumerWidget {
     final repo = ref.read(quranRepositoryProvider);
     await repo.clearAllUserData();
     await ref.read(wirdConfigNotifierProvider.notifier).clearWird();
+    await ref.read(khatmahConfigNotifierProvider.notifier).clearKhatmah();
     await ref.read(tikrarSessionsProvider.notifier).clearAllSessions();
     await NotificationService.cancelWirdReminder();
 
@@ -153,6 +155,7 @@ class SettingsScreen extends ConsumerWidget {
     ref.invalidate(memorizedPagesProvider);
     ref.invalidate(readingProgressProvider);
     ref.invalidate(wirdCompletedTodayProvider);
+    ref.invalidate(khatmahCompletedTodayProvider);
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
