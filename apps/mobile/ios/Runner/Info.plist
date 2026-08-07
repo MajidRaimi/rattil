@@ -72,5 +72,9 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Rattil needs microphone access to check your Quran recitation</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 </dict>
 </plist>

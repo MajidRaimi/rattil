@@ -57,6 +57,49 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
     _juz = _dataProvider.getJuzForPage(widget.pageNumber);
   }
 
+  static const _openingPageNameLines = <int, int>{1: 4, 2: 4};
+
+  static const double _landscapeLineCrop = 0.80;
+
+  Set<int> _surahHeaderLines(List<PageVerseData> pageVerses) {
+    final headers = <int>{};
+    if (pageVerses.isEmpty) return headers;
+
+    for (final chapter in _chapters) {
+      if (chapter.startPage != widget.pageNumber) continue;
+
+      final overrideLine = _openingPageNameLines[widget.pageNumber];
+      if (overrideLine != null) {
+        headers.add(overrideLine);
+        continue;
+      }
+
+      PageVerseData? opening;
+      for (final verse in pageVerses) {
+        if (verse.chapter == chapter.number && verse.number == 1) {
+          opening = verse;
+          break;
+        }
+      }
+      if (opening == null || opening.highlights1441.isEmpty) continue;
+
+      var firstLine = opening.highlights1441.first.line;
+      for (final highlight in opening.highlights1441) {
+        if (highlight.line < firstLine) firstLine = highlight.line;
+      }
+
+      final run = <int>[];
+      var line = firstLine - 1;
+      while (line >= 1 && !pageVerses.any((v) => v.occupiesLine(line))) {
+        run.insert(0, line);
+        line--;
+        if (run.length > 2) break;
+      }
+      if (run.isNotEmpty && run.length <= 2) headers.add(run.first);
+    }
+    return headers;
+  }
+
   @override
   Widget build(BuildContext context) {
     final verseProvider = VerseDataProvider.instance;
@@ -66,6 +109,7 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
 
     final isDark = theme.backgroundColor.computeLuminance() < 0.3;
     final gold = isDark ? const Color(0xFFD4A843) : const Color(0xFF8B6914);
+    final headerLines = _surahHeaderLines(pageVerses);
 
     final chapterName = _chapters.isNotEmpty
         ? _chapters.map((c) => c.arabicTitle).join(' \u06DE ')
@@ -77,132 +121,46 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
         bottom: false,
         child: Column(
           children: [
-            // ── 15 line images ──
             Expanded(
               child: Directionality(
                 textDirection: TextDirection.rtl,
-                child: Column(
-                    children: List.generate(15, (index) {
-                      final line = index + 1;
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final lines = List.generate(
+                      15,
+                      (index) => _buildLine(
+                        index + 1,
+                        pageVerses,
+                        headerLines,
+                        theme,
+                        gold,
+                      ),
+                    );
 
-                      final markers = pageVerses
-                          .where(
-                            (v) =>
-                                v.marker1441 != null &&
-                                v.marker1441!.line == line,
-                          )
-                          .toList();
-
-                      final versesOnLine = pageVerses
-                          .where((v) => v.occupiesLine(line))
-                          .toList();
-
-                      final selectionHighlights = <VerseHighlightData>[];
-                      if (widget.selectedVerseKey != null) {
-                        final selectedVerse = versesOnLine
-                            .where(
-                              (v) =>
-                                  v.chapter * 1000 + v.number ==
-                                  widget.selectedVerseKey,
-                            )
-                            .firstOrNull;
-                        if (selectedVerse != null) {
-                          selectionHighlights.addAll(
-                            selectedVerse.highlights1441
-                                .where((h) => h.line == line),
-                          );
-                        }
-                      }
-
-                      final audioHighlights = <VerseHighlightData>[];
-                      if (widget.audioVerseKey != null) {
-                        final audioVerse = versesOnLine
-                            .where(
-                              (v) =>
-                                  v.chapter * 1000 + v.number ==
-                                  widget.audioVerseKey,
-                            )
-                            .firstOrNull;
-                        if (audioVerse != null) {
-                          audioHighlights.addAll(
-                            audioVerse.highlights1441
-                                .where((h) => h.line == line),
-                          );
-                        }
-                      }
-
-                      return Expanded(
-                        child: QuranLineImage(
-                          page: widget.pageNumber,
-                          line: line,
-                          audioHighlights: audioHighlights,
-                          audioHighlightsColor: widget.audioHighlightsColor,
-                          selectionHighlights: selectionHighlights,
-                          markers: markers,
-                          highlightColor: theme.highlightColor,
-                          textColor: theme.textColor,
-                          onTapUpExact: widget.onVerseTap == null
-                              ? null
-                              : (tapRatio) {
-                                  if (versesOnLine.isEmpty) return;
-
-                                  PageVerseData? target;
-                                  for (final verse in versesOnLine) {
-                                    final hList = verse.highlights1441
-                                        .where((h) => h.line == line);
-                                    for (final h in hList) {
-                                      if (tapRatio >= h.left &&
-                                          tapRatio <= h.right) {
-                                        target = verse;
-                                        break;
-                                      }
-                                    }
-                                    if (target != null) break;
-                                  }
-
-                                  target ??= markers.isNotEmpty
-                                      ? markers.last
-                                      : versesOnLine.last;
-
-                                  if (kDebugMode) {
-                                    print(
-                                      "Calling onVerseTap with chapter: ${target.chapter}, verse: ${target.number}",
-                                    );
-                                  }
-                                  widget.onVerseTap!(target.chapter, target.number);
-                                },
-                          onLongPressExact: widget.onVerseLongPress == null
-                              ? null
-                              : (tapRatio) {
-                                  if (versesOnLine.isEmpty) return;
-
-                                  PageVerseData? target;
-                                  for (final verse in versesOnLine) {
-                                    final hList = verse.highlights1441
-                                        .where((h) => h.line == line);
-                                    for (final h in hList) {
-                                      if (tapRatio >= h.left &&
-                                          tapRatio <= h.right) {
-                                        target = verse;
-                                        break;
-                                      }
-                                    }
-                                    if (target != null) break;
-                                  }
-
-                                  target ??= markers.isNotEmpty
-                                      ? markers.last
-                                      : versesOnLine.last;
-
-                                  widget.onVerseLongPress!(
-                                      target.chapter, target.number);
-                                },
-                        ),
+                    if (constraints.maxWidth <= constraints.maxHeight) {
+                      return Column(
+                        children: [
+                          for (final line in lines) Expanded(child: line),
+                        ],
                       );
-                    }),
-                  ),
+                    }
+
+                    final slotHeight = constraints.maxWidth /
+                        QuranLineImage.aspectRatio *
+                        _landscapeLineCrop;
+
+                    return SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          for (final line in lines)
+                            SizedBox(height: slotHeight, child: line),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
+            ),
 
             SafeArea(
               top: false,
@@ -212,5 +170,92 @@ class _QuranPageWidgetState extends State<QuranPageWidget> {
         ),
       ),
     );
+  }
+
+  Widget _buildLine(
+    int line,
+    List<PageVerseData> pageVerses,
+    Set<int> headerLines,
+    ReadingThemeData theme,
+    Color gold,
+  ) {
+    final markers = pageVerses
+        .where((v) => v.marker1441 != null && v.marker1441!.line == line)
+        .toList();
+
+    final versesOnLine = pageVerses.where((v) => v.occupiesLine(line)).toList();
+
+    final selectionHighlights = <VerseHighlightData>[];
+    if (widget.selectedVerseKey != null) {
+      final selectedVerse = versesOnLine
+          .where((v) => v.chapter * 1000 + v.number == widget.selectedVerseKey)
+          .firstOrNull;
+      if (selectedVerse != null) {
+        selectionHighlights.addAll(
+          selectedVerse.highlights1441.where((h) => h.line == line),
+        );
+      }
+    }
+
+    final audioHighlights = <VerseHighlightData>[];
+    if (widget.audioVerseKey != null) {
+      final audioVerse = versesOnLine
+          .where((v) => v.chapter * 1000 + v.number == widget.audioVerseKey)
+          .firstOrNull;
+      if (audioVerse != null) {
+        audioHighlights.addAll(
+          audioVerse.highlights1441.where((h) => h.line == line),
+        );
+      }
+    }
+
+    return QuranLineImage(
+      page: widget.pageNumber,
+      line: line,
+      audioHighlights: audioHighlights,
+      audioHighlightsColor: widget.audioHighlightsColor,
+      selectionHighlights: selectionHighlights,
+      markers: markers,
+      highlightColor: theme.highlightColor,
+      textColor: theme.textColor,
+      isSurahHeader: headerLines.contains(line),
+      frameColor: gold,
+      onTapUpExact: widget.onVerseTap == null
+          ? null
+          : (tapRatio) {
+              final target = _verseAtRatio(versesOnLine, markers, line, tapRatio);
+              if (target == null) return;
+              if (kDebugMode) {
+                print(
+                  "Calling onVerseTap with chapter: ${target.chapter}, verse: ${target.number}",
+                );
+              }
+              widget.onVerseTap!(target.chapter, target.number);
+            },
+      onLongPressExact: widget.onVerseLongPress == null
+          ? null
+          : (tapRatio) {
+              final target = _verseAtRatio(versesOnLine, markers, line, tapRatio);
+              if (target == null) return;
+              widget.onVerseLongPress!(target.chapter, target.number);
+            },
+    );
+  }
+
+  PageVerseData? _verseAtRatio(
+    List<PageVerseData> versesOnLine,
+    List<PageVerseData> markers,
+    int line,
+    double tapRatio,
+  ) {
+    if (versesOnLine.isEmpty) return null;
+
+    for (final verse in versesOnLine) {
+      for (final h in verse.highlights1441.where((h) => h.line == line)) {
+        if (tapRatio >= h.left && tapRatio <= h.right) return verse;
+      }
+    }
+
+    return markers.isNotEmpty ? markers.last : versesOnLine.last;
   }
 }

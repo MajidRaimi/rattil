@@ -139,8 +139,9 @@ Future<void> setupMushafDependencies({
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.mushafimad.audio',
       androidNotificationChannelName: 'Mushaf Audio Playback',
-      androidNotificationOngoing: true,
-      androidStopForegroundOnPause: true,
+      androidNotificationIcon: 'drawable/ic_stat_notification',
+      androidNotificationOngoing: false,
+      androidStopForegroundOnPause: false,
     ),
   );
 

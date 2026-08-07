@@ -71,6 +71,9 @@ export 'src/data/local/dao/search_history_dao.dart';
 
 // Data Layer - Audio (public utilities)
 export 'src/data/audio/reciter_data_provider.dart';
+export 'src/data/audio/ayah_timing_service.dart';
+export 'src/data/audio/flutter_audio_player.dart'
+    show FlutterAudioPlayer, ChapterAudioSourceFactory;
 
 // Logging
 export 'src/logging/mushaf_logger.dart';

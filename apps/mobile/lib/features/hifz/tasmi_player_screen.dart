@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
 
 import '../../core/theme/app_color_scheme.dart';
+import '../../data/services/audio_focus.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/typography_ext.dart';
 import '../../core/utils/quranic_text.dart';
@@ -70,11 +71,15 @@ class _TasmiPlayerScreenState extends ConsumerState<TasmiPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    AudioFocus.register(AudioFocus.tasmiRecorder, () async {
+      await _recorder.cancel();
+    });
     _loadAyahs();
   }
 
   @override
   void dispose() {
+    AudioFocus.unregister(AudioFocus.tasmiRecorder);
     _toastEntry?.remove();
     _silenceTimer?.cancel();
     _maxRecordingTimer?.cancel();
@@ -288,6 +293,8 @@ class _TasmiPlayerScreenState extends ConsumerState<TasmiPlayerScreen> {
     _pcmBuffer.clear();
     _hasDetectedSpeech = false;
     _recordingStartTime = DateTime.now();
+
+    await AudioFocus.claim(AudioFocus.tasmiRecorder);
 
     // Stream raw PCM data
     final stream = await _recorder.startStream(

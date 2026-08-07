@@ -13,6 +13,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/tikrar_provider.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../providers/wird_provider.dart';
+import 'display_design_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -58,6 +59,10 @@ class SettingsScreen extends ConsumerWidget {
 
               // ── Theme ──
               _ThemeSection(),
+              const SizedBox(height: 16),
+
+              // ── Display Design ──
+              _DisplayDesignTile(),
               const SizedBox(height: 16),
 
               // ── Help & Support ──
@@ -453,6 +458,58 @@ class _FaqSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Display Design tile ──
+
+class _DisplayDesignTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final typo = context.typography;
+    final colors = context.colors;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DisplayDesignScreen()),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(
+                Icons.chrome_reader_mode_outlined,
+                color: colors.gold,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  Locales.string(context, 'display_design'),
+                  style: typo.bodyLarge.copyWith(
+                    color: colors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: colors.textTertiary,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -66,20 +66,27 @@ class DefaultAudioRepository implements AudioRepository {
   }
 
   @override
-  void loadChapter(
+  Future<void> loadChapter(
     int chapterNumber,
     int reciterId, {
     bool autoPlay = false,
+    String? chapterTitle,
   }) async {
-    final reciter = await _reciterService.getReciterById(reciterId);
-    if (reciter != null) {
-      await _audioPlayer.loadChapter(
-        chapterNumber,
-        reciter,
-        autoPlay: autoPlay,
-      );
+    final reciter = _reciterService.getReciterById(reciterId);
+    if (reciter == null) {
+      throw StateError('Unknown reciter id $reciterId');
     }
+    await _audioPlayer.loadChapter(
+      chapterNumber,
+      reciter,
+      autoPlay: autoPlay,
+      chapterTitle: chapterTitle,
+    );
   }
+
+  @override
+  Stream<int> getChapterCompletedStream() =>
+      _audioPlayer.chapterCompletedStream;
 
   @override
   void play() => _audioPlayer.play();
@@ -146,8 +153,8 @@ class DefaultAudioRepository implements AudioRepository {
       _ayahTimingService.hasTimingForReciter(reciterId);
 
   @override
-  Future<void> preloadTiming(int reciterId) =>
-      _ayahTimingService.preloadTiming(reciterId);
+  Future<void> preloadTiming(int reciterId, {int? chapterNumber}) =>
+      _ayahTimingService.preloadTiming(reciterId, chapterNumber: chapterNumber);
 
   @override
   void release() {

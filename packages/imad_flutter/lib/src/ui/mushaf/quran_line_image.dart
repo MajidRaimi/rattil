@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/quran/quran_data_provider.dart';
 import '../../data/quran/verse_data_provider.dart';
+import 'surah_frame.dart';
 import 'verse_fasel.dart';
 
 /// Displays a single Quran line image loaded from assets.
@@ -37,8 +38,11 @@ class QuranLineImage extends StatelessWidget {
   /// Verse markers that end on this line (for rendering VerseFasel).
   final List<PageVerseData> markers;
 
-  // Original image aspect ratio: 1440 x 232
-  static const double _aspectRatio = 1440.0 / 232.0;
+  final bool isSurahHeader;
+
+  final Color? frameColor;
+
+  static const double aspectRatio = 1440.0 / 232.0;
 
   const QuranLineImage({
     super.key,
@@ -53,6 +57,8 @@ class QuranLineImage extends StatelessWidget {
     this.markers = const [],
     this.highlightColor,
     this.textColor,
+    this.isSurahHeader = false,
+    this.frameColor,
   });
 
   @override
@@ -70,11 +76,26 @@ class QuranLineImage extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
+                if (isSurahHeader)
+                  CustomPaint(
+                    painter: SurahFramePainter(
+                      color: frameColor ?? const Color(0xFFD4A843),
+                    ),
+                  ),
+
                 // 👆 Selection Highlight background (precise bounding boxes)
                 ..._buildSelectionHighlights(lineWidth),
 
-                // 🎧 Audio Highlight (animated fill)
-                ..._buildAudioHighlights(assetPath),
+                // 🎧 Audio Highlight background for the ayah being recited
+                if (!isSurahHeader) ..._buildAudioHighlights(lineWidth),
+
+                if (isSurahHeader)
+                  Transform.scale(
+                    scale: 0.8,
+                    child: baseImage(assetPath: assetPath),
+                  ),
+
+                if (!isSurahHeader) baseImage(assetPath: assetPath),
 
                 // Verse separators (VerseFasel markers)
                 if (markers.isNotEmpty) _buildMarkers(lineWidth, lineHeight),
@@ -138,39 +159,16 @@ class QuranLineImage extends StatelessWidget {
     },
   );
 
-  List<Widget> _buildAudioHighlights(String assetPath) {
-    if (audioHighlights.isEmpty) {
-      return [baseImage(assetPath: assetPath)];
-    }
+  List<Widget> _buildHighlightBands(
+    double lineWidth,
+    List<VerseHighlightData> highlights,
+    Color color, {
+    required double fillAlpha,
+    required double borderAlpha,
+  }) {
+    if (highlights.isEmpty) return const [];
 
-    return audioHighlights.map((h) {
-      return Stack(
-        children: [
-          ClipRect(
-            clipper: _VerseClipper(0, h.left),
-            child: baseImage(assetPath: assetPath),
-          ),
-          ClipRect(
-            clipper: _VerseClipper(h.left, h.right),
-            child: baseImage(
-              assetPath: assetPath,
-              color: audioHighlightsColor ?? Colors.blue,
-              colorBlendMode: BlendMode.srcIn,
-            ),
-          ),
-          ClipRect(
-            clipper: _VerseClipper(h.right, 1),
-            child: baseImage(assetPath: assetPath),
-          ),
-        ],
-      );
-    }).toList();
-  }
-
-  List<Widget> _buildSelectionHighlights(double lineWidth) {
-    if (selectionHighlights.isEmpty) return [];
-
-    return selectionHighlights.map((h) {
+    return highlights.map((h) {
       // `h.left` and `h.right` are physical coordinates (0.0 = left edge, 1.0 = right edge)
       final leftPos = lineWidth * h.left;
       final width = lineWidth * (h.right - h.left);
@@ -182,10 +180,10 @@ class QuranLineImage extends StatelessWidget {
         bottom: 0,
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFD4A843).withValues(alpha: 0.12),
+            color: color.withValues(alpha: fillAlpha),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
-              color: const Color(0xFFD4A843).withValues(alpha: 0.25),
+              color: color.withValues(alpha: borderAlpha),
               width: 0.5,
             ),
           ),
@@ -193,6 +191,23 @@ class QuranLineImage extends StatelessWidget {
       );
     }).toList();
   }
+
+  List<Widget> _buildAudioHighlights(double lineWidth) => _buildHighlightBands(
+    lineWidth,
+    audioHighlights,
+    audioHighlightsColor ?? const Color(0xFFD4A843),
+    fillAlpha: 0.20,
+    borderAlpha: 0.38,
+  );
+
+  List<Widget> _buildSelectionHighlights(double lineWidth) =>
+      _buildHighlightBands(
+        lineWidth,
+        selectionHighlights,
+        const Color(0xFFD4A843),
+        fillAlpha: 0.12,
+        borderAlpha: 0.25,
+      );
 
   /// Build verse separator markers positioned on this line.
   Widget _buildMarkers(double lineWidth, double lineHeight) {
@@ -221,26 +236,5 @@ class QuranLineImage extends StatelessWidget {
         );
       }).toList(),
     );
-  }
-}
-
-class _VerseClipper extends CustomClipper<Rect> {
-  final double leftRatio;
-  final double rightRatio;
-
-  _VerseClipper(this.leftRatio, this.rightRatio);
-
-  @override
-  Rect getClip(Size size) {
-    final left = size.width * leftRatio;
-    final right = size.width * rightRatio;
-
-    return Rect.fromLTRB(left, 0, right, size.height);
-  }
-
-  @override
-  bool shouldReclip(_VerseClipper oldClipper) {
-    return oldClipper.leftRatio != leftRatio ||
-        oldClipper.rightRatio != rightRatio;
   }
 }

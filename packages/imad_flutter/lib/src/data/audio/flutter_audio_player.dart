@@ -1,13 +1,19 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../domain/models/audio_player_state.dart' as domain;
 import '../../domain/models/reciter_info.dart';
 
+typedef ChapterAudioSourceFactory =
+    Future<AudioSource> Function(Uri uri, int reciterId, int chapterNumber);
+
 /// App-specific AudioHandler that connects just_audio to audio_service
 class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
+
+  static ChapterAudioSourceFactory? audioSourceFactory;
 
   int? _currentChapter;
   int? _currentReciterId;
@@ -18,8 +24,22 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
   Stream<domain.AudioPlayerState> get domainStateStream =>
       _domainStateController.stream;
 
+  final _chapterCompletedController = StreamController<int>.broadcast();
+  Stream<int> get chapterCompletedStream => _chapterCompletedController.stream;
+
+  bool _sessionConfigured = false;
+
   FlutterAudioPlayer() {
     _initStreams();
+  }
+
+  Future<void> _configureSession() async {
+    if (_sessionConfigured) return;
+    _sessionConfigured = true;
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+    } catch (_) {}
   }
 
   void _initStreams() {
@@ -53,6 +73,13 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     });
 
     _player.positionStream.listen((_) => _broadcastDomainState());
+
+    _player.processingStateStream.listen((state) {
+      if (state == ProcessingState.completed) {
+        final finished = _currentChapter;
+        if (finished != null) _chapterCompletedController.add(finished);
+      }
+    });
   }
 
   AudioProcessingState _getProcessingState() {
@@ -107,7 +134,9 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
     int chapterNumber,
     ReciterInfo reciter, {
     bool autoPlay = false,
+    String? chapterTitle,
   }) async {
+    await _configureSession();
     _currentChapter = chapterNumber;
     _currentReciterId = reciter.id;
 
@@ -116,25 +145,23 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
         ? 'https://corsproxy.io/?${Uri.encodeComponent(reciter.getAudioUrl(chapterNumber))}'
         : reciter.getAudioUrl(chapterNumber);
 
-    final title = 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
-    print('[FlutterAudioPlayer] Loading chapter: $title from URL: $url');
+    final title = chapterTitle ?? 'Surah ${chapterNumber.toString().padLeft(3, "0")}';
 
     mediaItem.add(
       MediaItem(id: url, album: reciter.getDisplayName(), title: title),
     );
 
     try {
-      print('[FlutterAudioPlayer] Calling setAudioSource...');
-      await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
-      print(
-        '[FlutterAudioPlayer] setAudioSource completed successfully. autoPlay=$autoPlay',
-      );
+      final uri = Uri.parse(url);
+      final factory = audioSourceFactory;
+      final source = (factory == null || kIsWeb)
+          ? AudioSource.uri(uri)
+          : await factory(uri, reciter.id, chapterNumber);
+      await _player.setAudioSource(source);
       if (autoPlay) {
         play();
       }
-    } catch (e, stack) {
-      print('[FlutterAudioPlayer] ERROR loading audio source: $e');
-      print(stack);
+    } catch (e) {
       _domainStateController.add(
         domain.AudioPlayerState(
           playbackState: domain.PlaybackState.error,
@@ -146,28 +173,29 @@ class FlutterAudioPlayer extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> play() async {
-    print(
-      '[FlutterAudioPlayer] Play requested. Current state: ${_player.processingState}, playing: ${_player.playing}',
-    );
     try {
       await _player.play();
-      print('[FlutterAudioPlayer] Play completed.');
-    } catch (e, stack) {
-      print('[FlutterAudioPlayer] ERROR during play(): $e');
-      print(stack);
+    } catch (e) {
+      _domainStateController.add(
+        domain.AudioPlayerState(
+          playbackState: domain.PlaybackState.error,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 
   @override
   Future<void> pause() async {
-    print('[FlutterAudioPlayer] Pause requested.');
     await _player.pause();
   }
 
   @override
   Future<void> stop() async {
-    print('[FlutterAudioPlayer] Stop requested.');
     await _player.stop();
+    _currentChapter = null;
+    _currentReciterId = null;
+    _broadcastDomainState();
     await super.stop();
   }
 
