@@ -6,7 +6,7 @@ import 'package:imad_flutter/imad_flutter.dart' as imad;
 import 'package:quran/quran.dart' as quran;
 
 const kNastaleeqTotalPages = 604;
-const kNastaleeqFontFamily = 'KFGQPCNastaleeq';
+const kNastaleeqFontFamily = 'NotoNastaliqUrdu';
 const kNastaleeqBasmala = 'بِسمِ اللَّهِ الرَّحمنِ الرَّحيمِ';
 
 const _kMinFontSize = 9.0;
@@ -15,9 +15,9 @@ const _kJustifyMaxFontSize = 32.0;
 const _kFitIterations = 16;
 const _kFitSafety = 2.0;
 
-const _kLineHeight = 2.3;
-const _kBasmalaHeight = 2.1;
-const _kHeaderHeight = 2.0;
+const _kLineHeight = 3.2;
+const _kBasmalaHeight = 3.2;
+const _kHeaderHeight = 3.2;
 const _kBasmalaRatio = 0.92;
 const _kHeaderRatio = 0.85;
 
@@ -33,7 +33,7 @@ const _kHeaderChrome =
     _kHeaderOuterV * 2 + _kHeaderInnerV * 2 + _kHeaderBorder * 2;
 const _kHeaderInset = _kHeaderInnerH * 2 + _kHeaderBorder * 2;
 const _kMarkerRatio = 1.35;
-const _kMarkerAlignment = PlaceholderAlignment.middle;
+const _kMarkerAlignment = PlaceholderAlignment.baseline;
 
 TextStyle _bodyStyle(TextStyle base, double fontSize, Color color) =>
     base.merge(
@@ -96,6 +96,7 @@ double _measureParagraph(
     spans.add(
       const WidgetSpan(
         alignment: _kMarkerAlignment,
+        baseline: TextBaseline.alphabetic,
         child: SizedBox.shrink(),
       ),
     );
@@ -114,6 +115,8 @@ double _measureParagraph(
       PlaceholderDimensions(
         size: Size(markerSize, markerSize),
         alignment: _kMarkerAlignment,
+        baseline: TextBaseline.alphabetic,
+        baselineOffset: markerSize * 0.78,
       ),
     ),
   );
@@ -369,6 +372,8 @@ double _measurePage(
   return total;
 }
 
+final Map<String, double> _fitCache = {};
+
 double _fitFontSize(
   List<_PageBlock> blocks,
   double maxWidth,
@@ -376,13 +381,17 @@ double _fitFontSize(
   TextScaler scaler,
   TextStyle base,
   TextHeightBehavior? heightBehavior,
+  String cacheKey,
 ) {
   if (maxWidth <= 0 || maxHeight <= 0) return _kMinFontSize;
+  final cached = _fitCache[cacheKey];
+  if (cached != null) return cached;
   final budget = maxHeight - _kFitSafety;
   var low = _kMinFontSize;
   var high = _kMaxFontSize;
   if (_measurePage(blocks, high, maxWidth, scaler, base, heightBehavior) <=
       budget) {
+    _fitCache[cacheKey] = high;
     return high;
   }
   for (var i = 0; i < _kFitIterations; i++) {
@@ -394,6 +403,7 @@ double _fitFontSize(
       high = mid;
     }
   }
+  _fitCache[cacheKey] = low;
   return low;
 }
 
@@ -439,6 +449,8 @@ class _NastaleeqPage extends StatelessWidget {
           MediaQuery.textScalerOf(context),
           base,
           heightBehavior,
+          '$pageNumber:${constraints.maxWidth.round()}:'
+              '${MediaQuery.textScalerOf(context).scale(100).round()}',
         );
         final justify = fontSize <= _kJustifyMaxFontSize;
 
@@ -603,6 +615,7 @@ class _VerseParagraphState extends State<_VerseParagraph> {
       spans.add(
         WidgetSpan(
           alignment: _kMarkerAlignment,
+          baseline: TextBaseline.alphabetic,
           child: imad.VerseFasel(
             number: verse.number,
             size: widget.markerSize,
@@ -625,6 +638,18 @@ class _VerseParagraphState extends State<_VerseParagraph> {
             key: _paragraphKey,
             textAlign: widget.justify ? TextAlign.justify : TextAlign.start,
             style: widget.style,
+            textHeightBehavior: const TextHeightBehavior(
+              applyHeightToFirstAscent: true,
+              applyHeightToLastDescent: true,
+              leadingDistribution: TextLeadingDistribution.proportional,
+            ),
+            strutStyle: StrutStyle(
+              fontFamily: kNastaleeqFontFamily,
+              fontSize: widget.style.fontSize,
+              height: _kLineHeight,
+              leading: 0,
+              forceStrutHeight: true,
+            ),
           ),
         ),
       ),

@@ -106,9 +106,9 @@ flutter:
     - family: UthmanicHafs
       fonts:
         - asset: assets/fonts/UthmanicHafs.ttf
-    - family: KFGQPCNastaleeq
+    - family: NotoNastaliqUrdu
       fonts:
-        - asset: assets/fonts/HafsNastaleeq-Ver10.otf
+        - asset: assets/fonts/NotoNastaliqUrdu-Regular.ttf
     - family: NeueFrutigerWorld
       fonts:
         - asset: assets/fonts/NeueFrutigerWorld-Regular.ttf
