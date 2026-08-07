@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.5.1
+
+Raised the minimum supported iOS version from 13.0 to 15.0.
+
+Apple returned ITMS-90068 on the 1.5.0 delivery: from Spring 2027 every iOS app must
+declare a minimum of 15.0 or later to be uploaded or submitted. The Runner target was
+inheriting 13.0 from three project-level build configurations, and the `platform :ios`
+line in the Podfile was commented out so CocoaPods enforced no floor either. Both are now
+set to 15.0. The widget extension was already at 17.0 and is unchanged.
+
+iOS 15 runs on the iPhone 6s and later, so this drops only iPhone 6 and older.
+
 ## v1.5.0
 
 ### Nastaleeq mushaf script
