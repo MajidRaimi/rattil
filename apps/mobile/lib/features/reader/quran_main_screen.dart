@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../data/services/analytics_service.dart';
+import '../../data/services/audio_focus.dart';
 import '../../data/services/edge_tts_service.dart';
 import 'widgets/tajweed_legend.dart';
 import 'widgets/tajweed_verse.dart';
@@ -21,9 +22,15 @@ import '../../core/theme/app_typography.dart';
 import '../../core/theme/typography_ext.dart';
 import '../../data/services/recitation_service.dart';
 import '../../data/services/tafseer_service.dart';
+import '../../providers/display_design_provider.dart';
+import '../../providers/mushaf_script_provider.dart';
+import 'widgets/nastaleeq_page_view.dart';
 import '../../providers/quran_providers.dart';
 import '../../providers/tutorial_provider.dart';
+import '../../providers/surah_player_provider.dart';
 import '../bookmarks/bookmarks_screen.dart';
+import 'widgets/reciter_picker_sheet.dart';
+import 'widgets/surah_player_bar.dart';
 import '../bookmarks/widgets/save_to_collection_sheet.dart';
 import '../hifz/profile_screen.dart';
 import '../search/search_screen.dart';
@@ -37,6 +44,22 @@ import 'widgets/hizb_picker_sheet.dart';
 
 /// Tab indices: 0=Search, 1=Bookmarks, 2=Quran, 3=Hifz, 4=Settings
 const _kQuranTab = 2;
+
+const _kPinnedTopInset = 42.0;
+const _kPinnedBottomInset = 44.0;
+const _kNavPillHeight = 58.0;
+const _kMetaChipHeight = 30.0;
+const _kSurahPlayerInset = 96.0;
+
+/// proportion to the font's ascent and descent. The resulting line box sits
+const _kSurahLabelIconOpticalOffset = 2.5;
+
+const _kPortraitOnly = [DeviceOrientation.portraitUp];
+const _kReaderOrientations = [
+  DeviceOrientation.portraitUp,
+  DeviceOrientation.landscapeLeft,
+  DeviceOrientation.landscapeRight,
+];
 
 const _localeToQuranLanguage = <String, QuranLanguage>{
   'am': QuranLanguage.amharic,
@@ -123,16 +146,73 @@ class _AppShellState extends ConsumerState<_AppShell> {
   int _tutorialPhase = 0;
 
   final _mushafPageKey = GlobalKey<imad.MushafPageViewState>();
+  final _nastaleeqPageKey = GlobalKey<NastaleeqPageViewState>();
   BuildContext? _showcaseContext;
+
+  void _goToPage(int page, {int? highlightVerseKey}) {
+    _mushafPageKey.currentState
+        ?.goToPage(page, highlightVerseKey: highlightVerseKey);
+    _nastaleeqPageKey.currentState
+        ?.goToPage(page, highlightVerseKey: highlightVerseKey);
+  }
 
   bool get _isMushaf => _activeTab == _kQuranTab;
   bool get _effectiveShowChrome => _showChrome || _tutorialActive;
+
+  bool? _landscapeAllowed;
+  DateTime? _audioTurnAt;
+  DateTime? _lastManualTurnAt;
+  int? _lastFollowedVerseKey;
+  int? _lastFollowedChapter;
+
+  void _followAudio(imad.AudioPlayerState? state) {
+    if (state == null || !_isMushaf) return;
+    final chapter = state.currentChapter;
+    final verse = state.currentVerse;
+    if (chapter == null || verse == null || verse == 0) return;
+
+    if (_lastFollowedChapter != chapter) {
+      _lastFollowedChapter = chapter;
+      _lastManualTurnAt = null;
+    }
+
+    final key = chapter * 1000 + verse;
+    if (_lastFollowedVerseKey == key) return;
+    _lastFollowedVerseKey = key;
+
+    final manual = _lastManualTurnAt;
+    if (manual != null &&
+        DateTime.now().difference(manual) < const Duration(seconds: 10)) {
+      return;
+    }
+
+    final targetPage = quran.getPageNumber(chapter, verse);
+    if (targetPage == _currentPage) return;
+
+    _audioTurnAt = DateTime.now();
+    _goToPage(targetPage);
+  }
+
+  void _syncPreferredOrientations() {
+    final allow = _isMushaf && !_tutorialActive;
+    if (_landscapeAllowed == allow) return;
+    _landscapeAllowed = allow;
+    SystemChrome.setPreferredOrientations(
+      allow ? _kReaderOrientations : _kPortraitOnly,
+    );
+  }
 
   @override
   void initState() {
     super.initState();
     _currentPage = widget.initialPage;
     _loadPageMetadata(widget.initialPage);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(_kPortraitOnly);
+    super.dispose();
   }
 
   void _startTutorial() {
@@ -211,7 +291,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
     // If already on the Quran tab, just navigate the page directly.
     if (_activeTab == _kQuranTab) {
-      _mushafPageKey.currentState?.goToPage(page,
+      _goToPage(page,
           highlightVerseKey: verseKey);
       return;
     }
@@ -228,7 +308,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
       _activeTab = _kQuranTab;
       _showChrome = true;
     });
-    _mushafPageKey.currentState?.goToPage(page,
+    _goToPage(page,
         highlightVerseKey: verseKey);
 
     // Let the target page render one frame.
@@ -262,6 +342,14 @@ class _AppShellState extends ConsumerState<_AppShell> {
   void _onPageChanged(int page) {
     setState(() => _currentPage = page);
     _loadPageMetadata(page);
+
+    final audioTurn = _audioTurnAt;
+    if (audioTurn != null &&
+        DateTime.now().difference(audioTurn) < const Duration(seconds: 1)) {
+      return;
+    }
+    _lastManualTurnAt = DateTime.now();
+
     final pageData = quran.getPageData(page);
     if (pageData.isNotEmpty) {
       final firstSurah = pageData.first['surah'] as int;
@@ -276,11 +364,16 @@ class _AppShellState extends ConsumerState<_AppShell> {
   String get _currentSurahName {
     final pageData = quran.getPageData(_currentPage);
     if (pageData.isEmpty) return '';
-    final surahNum = pageData.first['surah'] as int;
+    return _surahDisplayName(pageData.first['surah'] as int);
+  }
+
+  String _surahDisplayName(int surahNumber) {
     final locale = Locales.currentLocale(context)?.languageCode ?? 'en';
     final prefix = Locales.string(context, 'surah_prefix');
-    if (locale == 'ar') return '$prefix ${quran.getSurahNameArabic(surahNum)}';
-    return '$prefix ${quran.getSurahName(surahNum)}';
+    if (locale == 'ar') {
+      return '$prefix ${quran.getSurahNameArabic(surahNumber)}';
+    }
+    return '$prefix ${quran.getSurahName(surahNumber)}';
   }
 
   Widget _buildWirdChip(AppColorScheme colors) {
@@ -328,7 +421,10 @@ class _AppShellState extends ConsumerState<_AppShell> {
     );
   }
 
-  void _toggleChrome() => setState(() => _showChrome = !_showChrome);
+  void _toggleChrome() {
+    ref.read(surahPlayerProvider.notifier).setExpanded(false);
+    setState(() => _showChrome = !_showChrome);
+  }
 
   void _showPagePicker() {
     showModalBottomSheet(
@@ -338,7 +434,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
       builder: (_) => PagePickerSheet(
         currentPage: _currentPage,
         onPageSelected: (page) {
-          _mushafPageKey.currentState?.goToPage(page);
+          _goToPage(page);
         },
       ),
     );
@@ -358,7 +454,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
           currentSurahNumber: currentSurah,
           onSurahSelected: (surahNumber) {
             final page = quran.getPageNumber(surahNumber, 1);
-            _mushafPageKey.currentState?.goToPage(page);
+            _goToPage(page);
           },
         ),
       ),
@@ -375,7 +471,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
         child: JuzPickerSheet(
           currentJuz: _currentJuz,
           onJuzSelected: (startPage) {
-            _mushafPageKey.currentState?.goToPage(startPage);
+            _goToPage(startPage);
           },
         ),
       ),
@@ -392,7 +488,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
         child: HizbPickerSheet(
           currentHizb: _currentHizb,
           onHizbSelected: (startPage) {
-            _mushafPageKey.currentState?.goToPage(startPage);
+            _goToPage(startPage);
           },
         ),
       ),
@@ -426,11 +522,20 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    _syncPreferredOrientations();
+
     // Listen for navigation requests from search / bookmarks / etc.
     ref.listen(readerNavigationProvider, (prev, next) {
       if (next == null) return;
       ref.read(readerNavigationProvider.notifier).state = null;
       _navigateToReader(next);
+    });
+
+    ref.read(surahPlayerProvider.notifier).titleResolver = (chapter) =>
+        mounted ? _surahDisplayName(chapter) : '';
+
+    ref.listen(surahPlayerStateProvider, (prev, next) {
+      _followAudio(next.valueOrNull);
     });
 
     // Listen for tutorial status changes:
@@ -444,6 +549,8 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pinned =
+        ref.watch(displayDesignModeProvider) == ReaderDisplayMode.alwaysVisible;
     final mushafTheme = isDark
         ? imad.ReadingTheme.dark
         : imad.ReadingTheme.light;
@@ -468,7 +575,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
                   children: [
                     const SearchScreen(),      // 0
                     const BookmarksScreen(),    // 1
-                    _buildMushafView(mushafTheme), // 2 (center)
+                    _buildMushafView(mushafTheme, pinned), // 2 (center)
                     ProfileScreen(key: TutorialKeys.profileScreen),      // 3
                     const SettingsScreen(),     // 4
                   ],
@@ -489,10 +596,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
               ),
 
               // ── Top chrome (mushaf only) ──
-              if (_isMushaf) _buildTopChrome(),
+              if (_isMushaf) _buildTopChrome(pinned),
 
               // ── Bottom bar ──
               _buildBottomBar(),
+
+              if (_isMushaf && pinned) _buildBottomMeta(),
+
+              if (_isMushaf && ref.watch(surahPlayerProvider).isActive)
+                _buildSurahPlayer(),
             ],
           ),
         ),
@@ -501,8 +613,14 @@ class _AppShellState extends ConsumerState<_AppShell> {
     );
   }
 
-  Widget _buildMushafView(imad.ReadingTheme mushafTheme) {
+  Widget _buildMushafView(imad.ReadingTheme mushafTheme, bool pinned) {
     final colors = context.colors;
+    final mq = MediaQuery.of(context);
+    final playerActive = ref.watch(surahPlayerProvider).isActive;
+    final extraTop = pinned ? _kPinnedTopInset : 0.0;
+    final extraBottom =
+        (pinned ? _kPinnedBottomInset : 0.0) +
+        (playerActive ? _kSurahPlayerInset : 0.0);
     return Showcase(
       key: TutorialKeys.readerArea,
       title: Locales.string(context, 'tutorial_reader_title'),
@@ -512,16 +630,41 @@ class _AppShellState extends ConsumerState<_AppShell> {
       descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
       targetBorderRadius: BorderRadius.circular(16),
       overlayOpacity: 0.75,
-      child: imad.MushafPageView(
-        key: _mushafPageKey,
-        initialPage: _currentPage,
-        onPageChanged: _onPageChanged,
-        onTap: _toggleChrome,
-        onVerseLongPress: _onVerseLongPress,
-        showNavigationControls: false,
-        showPageInfo: false,
-        showAudioPlayer: false,
-        readingTheme: mushafTheme,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(end: extraBottom),
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        builder: (context, animatedBottom, child) => MediaQuery(
+          data: mq.copyWith(
+            padding: mq.padding.copyWith(
+              top: mq.padding.top + extraTop,
+              bottom: mq.padding.bottom + animatedBottom,
+            ),
+          ),
+          child: child!,
+        ),
+        child: ref.watch(mushafScriptModeProvider) == MushafScript.nastaleeq
+            ? NastaleeqPageView(
+                key: _nastaleeqPageKey,
+                initialPage: _currentPage,
+                onPageChanged: _onPageChanged,
+                onTap: _toggleChrome,
+                onVerseLongPress: _onVerseLongPress,
+                readingTheme: mushafTheme,
+                audioHighlightsColor: colors.gold,
+              )
+            : imad.MushafPageView(
+                key: _mushafPageKey,
+                initialPage: _currentPage,
+                onPageChanged: _onPageChanged,
+                onTap: _toggleChrome,
+                onVerseLongPress: _onVerseLongPress,
+                showNavigationControls: false,
+                showPageInfo: false,
+                showAudioPlayer: false,
+                readingTheme: mushafTheme,
+                audioHighlightsColor: colors.gold,
+              ),
       ),
     );
   }
@@ -878,7 +1021,253 @@ class _AppShellState extends ConsumerState<_AppShell> {
     );
   }
 
-  Widget _buildTopChrome() {
+  Widget _buildPageLabel(AppColorScheme colors, TextStyle metaStyle) {
+    return Showcase(
+      key: TutorialKeys.pageNumber,
+      title: Locales.string(context, 'tutorial_page_title'),
+      description: Locales.string(context, 'tutorial_page_desc'),
+      tooltipBackgroundColor: colors.surface,
+      titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+      descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+      targetBorderRadius: BorderRadius.circular(16),
+      child: GestureDetector(
+        onTap: _showPagePicker,
+        child: Text(
+          '${Locales.string(context, 'page')} $_currentPage / 604',
+          style: metaStyle.copyWith(fontWeight: FontWeight.w400),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSurahLabel(AppColorScheme colors, AppTypography typo) {
+    return Showcase(
+      key: TutorialKeys.surahName,
+      title: Locales.string(context, 'tutorial_surah_title'),
+      description: Locales.string(context, 'tutorial_surah_desc'),
+      tooltipBackgroundColor: colors.surface,
+      titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+      descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+      targetBorderRadius: BorderRadius.circular(16),
+      child: GestureDetector(
+        onTap: _showSurahPicker,
+        onLongPress: _showReciterPicker,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                _currentSurahName,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: typo.arabicDisplay.copyWith(
+                  fontSize: 20,
+                  color: colors.gold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Transform.translate(
+              offset: const Offset(0, _kSurahLabelIconOpticalOffset),
+              child: Icon(
+                Icons.headphones_rounded,
+                size: 13,
+                color: colors.goldDim.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showReciterPicker() {
+    final selectedId = ref.read(selectedReciterIdProvider);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ProviderScope(
+        parent: ProviderScope.containerOf(context),
+        child: ReciterPickerSheet(
+          currentReciterId: selectedId,
+          surahName: _currentSurahName,
+          onReciterSelected: _startSurahPlayback,
+        ),
+      ),
+    );
+  }
+
+  void _startSurahPlayback(imad.ReciterInfo reciter) {
+    final pageData = quran.getPageData(_currentPage);
+    if (pageData.isEmpty) return;
+    final surahNumber = pageData.first['surah'] as int;
+    _lastManualTurnAt = null;
+    _lastFollowedVerseKey = null;
+    ref.read(selectedReciterIdProvider.notifier).select(reciter.id);
+    AnalyticsService.event('Surah Playback Started', props: {
+      'surah': '$surahNumber',
+      'reciter': '${reciter.id}',
+    });
+    ref.read(surahPlayerProvider.notifier).play(
+          SurahPlaybackRequest(
+            chapterNumber: surahNumber,
+            reciterId: reciter.id,
+            chapterTitle: _currentSurahName,
+          ),
+        );
+  }
+
+  Widget _buildJuzLabel(AppColorScheme colors, TextStyle metaStyle) {
+    return Showcase(
+      key: TutorialKeys.juzLabel,
+      title: Locales.string(context, 'tutorial_juz_title'),
+      description: Locales.string(context, 'tutorial_juz_desc'),
+      tooltipBackgroundColor: colors.surface,
+      titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
+      descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
+      targetBorderRadius: BorderRadius.circular(16),
+      child: GestureDetector(
+        onTap: _showJuzPicker,
+        child: Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
+      ),
+    );
+  }
+
+  Widget _buildHizbLabel(TextStyle metaStyle) {
+    return GestureDetector(
+      onTap: _showHizbPicker,
+      child: Text('${Locales.string(context, 'hizb_label')} ${ordinal(_currentHizb, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle.copyWith(fontWeight: FontWeight.w400)),
+    );
+  }
+
+  Widget _buildImmersiveTopRow(
+      AppColorScheme colors, AppTypography typo, TextStyle metaStyle) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  _buildPageLabel(colors, metaStyle),
+                  const SizedBox(width: 8),
+                  _buildWirdChip(colors),
+                ],
+              ),
+              const SizedBox(height: 2),
+              _buildSurahLabel(colors, typo),
+            ],
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildJuzLabel(colors, metaStyle),
+            const SizedBox(height: 2),
+            _buildHizbLabel(metaStyle),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPinnedTopRow(
+      AppColorScheme colors, AppTypography typo, TextStyle metaStyle) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: _buildSurahLabel(colors, typo)),
+              const SizedBox(width: 8),
+              _buildWirdChip(colors),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        _buildJuzLabel(colors, metaStyle),
+      ],
+    );
+  }
+
+  Widget _buildSurahPlayer() {
+    final pinned =
+        ref.watch(displayDesignModeProvider) == ReaderDisplayMode.alwaysVisible;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final barVisible = _effectiveShowChrome;
+    final occupied = barVisible
+        ? _kNavPillHeight + 12
+        : (pinned ? _kMetaChipHeight + 4 : 0);
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      left: 20,
+      right: 20,
+      bottom: bottomPad + 8 + occupied,
+      child: const SurahPlayerBar(),
+    );
+  }
+
+  Widget _buildBottomMeta() {
+    final colors = context.colors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final typo = context.typography;
+    final metaStyle = typo.bodySmall.copyWith(
+      color: colors.goldDim,
+      fontWeight: FontWeight.w600,
+    );
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: bottomPad + 4,
+      child: IgnorePointer(
+        ignoring: _effectiveShowChrome,
+        child: AnimatedOpacity(
+          opacity: _effectiveShowChrome ? 0.0 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _buildMetaChip(
+                    colors, isDark, _buildPageLabel(colors, metaStyle)),
+                const Spacer(),
+                _buildMetaChip(colors, isDark, _buildHizbLabel(metaStyle)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetaChip(AppColorScheme colors, bool isDark, Widget child) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? colors.divider.withValues(alpha: 0.5)
+              : Colors.transparent,
+        ),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildTopChrome(bool pinned) {
     final colors = context.colors;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final typo = context.typography;
@@ -887,107 +1276,32 @@ class _AppShellState extends ConsumerState<_AppShell> {
       color: colors.goldDim,
       fontWeight: FontWeight.w600,
     );
+    final visible = pinned || _effectiveShowChrome;
 
     return Positioned(
       top: 0,
       left: 0,
       right: 0,
       child: IgnorePointer(
-        ignoring: !_effectiveShowChrome,
+        ignoring: !visible,
         child: AnimatedSlide(
-          offset: Offset(0, _effectiveShowChrome ? 0 : -1),
+          offset: Offset(0, visible ? 0 : -1),
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           child: AnimatedOpacity(
-            opacity: _effectiveShowChrome ? 1.0 : 0.0,
+            opacity: visible ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 250),
             child: Container(
-              padding: EdgeInsets.fromLTRB(
-                  20, MediaQuery.of(context).padding.top + 8, 20, 14),
+              padding: EdgeInsets.fromLTRB(20,
+                  MediaQuery.of(context).padding.top + 8, 20, pinned ? 10 : 14),
               decoration: BoxDecoration(
-                color: chromeBg.withValues(alpha: 0.9),
+                color: pinned
+                    ? Colors.transparent
+                    : chromeBg.withValues(alpha: 0.9),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Start: Page number & Surah name
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Showcase(
-                              key: TutorialKeys.pageNumber,
-                              title: Locales.string(context, 'tutorial_page_title'),
-                              description: Locales.string(context, 'tutorial_page_desc'),
-                              tooltipBackgroundColor: colors.surface,
-                              titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
-                              descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
-                              targetBorderRadius: BorderRadius.circular(16),
-                              child: GestureDetector(
-                                onTap: _showPagePicker,
-                                child: Text(
-                                  '${Locales.string(context, 'page')} $_currentPage / 604',
-                                  style: metaStyle.copyWith(fontWeight: FontWeight.w400),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            _buildWirdChip(colors),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Showcase(
-                          key: TutorialKeys.surahName,
-                          title: Locales.string(context, 'tutorial_surah_title'),
-                          description: Locales.string(context, 'tutorial_surah_desc'),
-                          tooltipBackgroundColor: colors.surface,
-                          titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
-                          descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
-                          targetBorderRadius: BorderRadius.circular(16),
-                          child: GestureDetector(
-                            onTap: _showSurahPicker,
-                            child: Text(
-                              _currentSurahName,
-                              style: typo.arabicDisplay.copyWith(
-                                fontSize: 20,
-                                color: colors.gold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // End: Juz & Hizb
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Showcase(
-                        key: TutorialKeys.juzLabel,
-                        title: Locales.string(context, 'tutorial_juz_title'),
-                        description: Locales.string(context, 'tutorial_juz_desc'),
-                        tooltipBackgroundColor: colors.surface,
-                        titleTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.gold, fontWeight: FontWeight.w600, fontSize: 16),
-                        descTextStyle: TextStyle(fontFamily: 'NeueFrutigerWorld', color: colors.textSecondary, fontSize: 13),
-                        targetBorderRadius: BorderRadius.circular(16),
-                        child: GestureDetector(
-                          onTap: _showJuzPicker,
-                          child: Text('${Locales.string(context, 'juz_label')} ${ordinal(_currentJuz, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      GestureDetector(
-                        onTap: _showHizbPicker,
-                        child: Text('${Locales.string(context, 'hizb_label')} ${ordinal(_currentHizb, Locales.currentLocale(context)?.languageCode ?? 'en')}', style: metaStyle.copyWith(fontWeight: FontWeight.w400)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              child: pinned
+                  ? _buildPinnedTopRow(colors, typo, metaStyle)
+                  : _buildImmersiveTopRow(colors, typo, metaStyle),
             ),
           ),
         ),
@@ -1207,6 +1521,10 @@ class _ReciterSheetState extends State<_ReciterSheet> {
   @override
   void initState() {
     super.initState();
+    AudioFocus.register(AudioFocus.reciterPreview, () async {
+      await _player.stop();
+      if (mounted) setState(() => _playingUrl = null);
+    });
     _loadReciters();
     _player.playerStateStream.listen((state) {
       if (!mounted) return;
@@ -1242,6 +1560,7 @@ class _ReciterSheetState extends State<_ReciterSheet> {
         _buffering = true;
       });
       try {
+        await AudioFocus.claim(AudioFocus.reciterPreview);
         await _player.setUrl(reciter.audioUrl);
         await _player.play();
       } catch (_) {
@@ -1268,6 +1587,7 @@ class _ReciterSheetState extends State<_ReciterSheet> {
 
   @override
   void dispose() {
+    AudioFocus.unregister(AudioFocus.reciterPreview);
     _player.dispose();
     super.dispose();
   }
@@ -1441,6 +1761,10 @@ class _TafseerSheetState extends State<_TafseerSheet> {
   @override
   void initState() {
     super.initState();
+    AudioFocus.register(AudioFocus.tafseerPlayer, () async {
+      await _audioPlayer.stop();
+      if (mounted) setState(() => _isSpeaking = false);
+    });
     _audioPlayer.playerStateStream.listen((state) {
       if (!mounted) return;
       if (state.processingState == ProcessingState.completed) {
@@ -1475,6 +1799,7 @@ class _TafseerSheetState extends State<_TafseerSheet> {
       final file = File('${dir.path}/tafsir_tts.mp3');
       await file.writeAsBytes(audioBytes);
 
+      await AudioFocus.claim(AudioFocus.tafseerPlayer);
       await _audioPlayer.setFilePath(file.path);
       setState(() {
         _ttsLoading = false;
@@ -1520,6 +1845,7 @@ class _TafseerSheetState extends State<_TafseerSheet> {
 
   @override
   void dispose() {
+    AudioFocus.unregister(AudioFocus.tafseerPlayer);
     _audioPlayer.dispose();
     super.dispose();
   }

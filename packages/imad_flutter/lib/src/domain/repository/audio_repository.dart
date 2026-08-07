@@ -33,7 +33,15 @@ abstract class AudioRepository {
   Stream<AudioPlayerState> getPlayerStateStream();
 
   /// Load and optionally play a chapter.
-  void loadChapter(int chapterNumber, int reciterId, {bool autoPlay = false});
+  Future<void> loadChapter(
+    int chapterNumber,
+    int reciterId, {
+    bool autoPlay = false,
+    String? chapterTitle,
+  });
+
+  /// Emits the chapter number each time a chapter plays to completion.
+  Stream<int> getChapterCompletedStream();
 
   /// Start or resume playback.
   void play();
@@ -86,7 +94,7 @@ abstract class AudioRepository {
   bool hasTimingForReciter(int reciterId);
 
   /// Preload timing data for better performance.
-  Future<void> preloadTiming(int reciterId);
+  Future<void> preloadTiming(int reciterId, {int? chapterNumber});
 
   /// Release player resources.
   void release();

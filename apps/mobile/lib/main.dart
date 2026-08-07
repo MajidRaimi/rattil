@@ -10,6 +10,8 @@ import 'package:quran_flutter/quran_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'data/services/home_widget_service.dart';
+import 'data/services/mp3quran_service.dart';
+import 'data/services/surah_audio_cache.dart';
 import 'data/services/analytics_service.dart';
 import 'data/services/notification_service.dart';
 
@@ -43,6 +45,8 @@ void main() async {
   }
   await Quran.initialize();
   await setupMushafWithHive();
+  AyahTimingService.remoteFetcher = Mp3QuranService.instance.fetchAyahTiming;
+  FlutterAudioPlayer.audioSourceFactory = SurahAudioCache.instance.buildSource;
   await HomeWidgetService.initialize();
   HomeWidget.registerInteractivityCallback(homeWidgetBackgroundCallback);
   await HomeWidgetService.updateWidget();

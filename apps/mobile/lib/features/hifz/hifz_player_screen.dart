@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import '../../data/services/analytics_service.dart';
+import '../../data/services/audio_focus.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -84,6 +85,10 @@ class _HifzPlayerScreenState extends ConsumerState<HifzPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    AudioFocus.register(AudioFocus.hifzPlayer, () async {
+      await _player.stop();
+    });
+    AudioFocus.claim(AudioFocus.hifzPlayer);
     // Restore state from session
     _selectedReciterId = _session.reciterId;
     _repetitions = _session.repetitions;
@@ -497,6 +502,7 @@ class _HifzPlayerScreenState extends ConsumerState<HifzPlayerScreen> {
 
   @override
   void dispose() {
+    AudioFocus.unregister(AudioFocus.hifzPlayer);
     _player.dispose();
     _scrollController.dispose();
     if (!_sessionComplete) {
