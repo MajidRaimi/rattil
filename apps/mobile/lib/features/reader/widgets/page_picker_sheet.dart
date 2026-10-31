@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_locales/flutter_locales.dart';
 import '../../../core/theme/typography_ext.dart';
+import '../../../core/constants/quran_constants.dart';
 
 class PagePickerSheet extends StatelessWidget {
   final int currentPage;
+  final int pageCount;
   final ValueChanged<int> onPageSelected;
 
   const PagePickerSheet({
     super.key,
     required this.currentPage,
+    this.pageCount = QuranConstants.pageCount,
     required this.onPageSelected,
   });
 
@@ -20,7 +23,10 @@ class PagePickerSheet extends StatelessWidget {
     final currentRow = (currentPage - 1) ~/ columns;
     // Each cell is roughly 56px tall (48 + 8 spacing)
     const cellHeight = 56.0;
-    final initialOffset = (currentRow * cellHeight - cellHeight).clamp(0.0, double.infinity);
+    final initialOffset = (currentRow * cellHeight - cellHeight).clamp(
+      0.0,
+      double.infinity,
+    );
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
@@ -45,8 +51,9 @@ class PagePickerSheet extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   Locales.string(context, 'select_page'),
-                  style: typo.headlineMedium
-                      .copyWith(color: colors.textPrimary),
+                  style: typo.headlineMedium.copyWith(
+                    color: colors.textPrimary,
+                  ),
                 ),
               ],
             ),
@@ -61,7 +68,7 @@ class PagePickerSheet extends StatelessWidget {
                 crossAxisSpacing: 8,
                 childAspectRatio: 1.2,
               ),
-              itemCount: 604,
+              itemCount: pageCount,
               itemBuilder: (context, index) {
                 final page = index + 1;
                 final isCurrent = page == currentPage;
@@ -85,8 +92,9 @@ class PagePickerSheet extends StatelessWidget {
                       '$page',
                       style: typo.bodyMedium.copyWith(
                         color: isCurrent ? colors.gold : colors.textPrimary,
-                        fontWeight:
-                            isCurrent ? FontWeight.w700 : FontWeight.w400,
+                        fontWeight: isCurrent
+                            ? FontWeight.w700
+                            : FontWeight.w400,
                       ),
                     ),
                   ),

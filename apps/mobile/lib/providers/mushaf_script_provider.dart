@@ -5,7 +5,7 @@ part 'mushaf_script_provider.g.dart';
 
 const _kMushafScriptKey = 'mushaf_script';
 
-enum MushafScript { madinah, nastaleeq }
+enum MushafScript { madinah, nastaleeq, nastaleeqKfgqpc }
 
 @Riverpod(keepAlive: true)
 class MushafScriptMode extends _$MushafScriptMode {

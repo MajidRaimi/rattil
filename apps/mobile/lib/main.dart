@@ -14,6 +14,7 @@ import 'data/services/mp3quran_service.dart';
 import 'data/services/surah_audio_cache.dart';
 import 'data/services/analytics_service.dart';
 import 'data/services/notification_service.dart';
+import 'features/reader/nastaleeq/nastaleeq_licenses.dart';
 
 @pragma('vm:entry-point')
 Future<void> homeWidgetBackgroundCallback(Uri? uri) async {
@@ -25,6 +26,7 @@ Future<void> homeWidgetBackgroundCallback(Uri? uri) async {
 void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  registerNastaleeqLicenses();
   await NotificationService.init();
   const supportedCodes = [
     'ar', 'en', 'am', 'az', 'bn', 'bs', 'zh', 'cs', 'nl', 'tl',

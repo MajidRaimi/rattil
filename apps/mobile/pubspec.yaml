@@ -1,7 +1,7 @@
 name: quran_mobile
 description: "Offline-first Quran reading app"
 publish_to: 'none'
-version: 1.5.1+1
+version: 1.5.2+1
 
 environment:
   sdk: ^3.11.0
@@ -101,11 +101,17 @@ flutter:
     - assets/db/
     - assets/locales/
     - assets/app_icon.png
+    - assets/quran/
+    - assets/fonts/DigitalKhattIndoPak-OFL.txt
+    - assets/fonts/HafsNastaleeq-LICENSE.txt
 
   fonts:
     - family: UthmanicHafs
       fonts:
         - asset: assets/fonts/UthmanicHafs.ttf
+    - family: DigitalKhattIndoPak
+      fonts:
+        - asset: assets/fonts/DigitalKhattIndoPak.ttf
     - family: KFGQPCNastaleeq
       fonts:
         - asset: assets/fonts/HafsNastaleeq-Ver10.otf

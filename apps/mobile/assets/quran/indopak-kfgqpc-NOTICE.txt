@@ -1,0 +1,22 @@
+KFGQPC Hafs Nastaleeq Quran text
+
+Publisher: King Fahd Glorious Quran Printing Complex (KFGQPC), AlMadinah AlMunawarrah.
+Source of record: https://fonts.qurancomplex.gov.sa/nastaleeq-reading/
+Archive: https://fonts.qurancomplex.gov.sa/wp-content/uploads/2022/11/HafsNastaleeq-Ver10.zip
+Archive sha256: 56543ae78f1792b6b8911ba57dd70fb542a311ac0339b1f85563ff446d021442
+File in the archive: HafsNastaleeq Ver10.doc
+File sha256: c095cd87afe571a27466c06284819b678f8ef97cafa85bc526de54511f8ac653
+
+The text in indopak-kfgqpc.json is shipped as published by KFGQPC. It is extracted
+from the document by scripts/build-indopak-texts.ts. No letters, vowel marks or
+pause signs are changed. The only display normalisations are:
+- runs of whitespace collapsed to a single space;
+- a no-break space (U+00A0) before each ayah number so the number cannot wrap
+  away from the last word;
+- a combining grapheme joiner (U+034F) between U+064B and U+06E3 in 2:249, 3:34,
+  9:66, 18:74, 27:52, 29:35, 43:28 and 59:7, so the font does not draw a pause
+  sign that the text does not contain.
+
+The text is designed for, and only renders correctly with, the KFGQPC Hafs
+Nastaleeq font (HafsNastaleeq-Ver10.otf). See HafsNastaleeq-LICENSE.txt for the
+font licence.
