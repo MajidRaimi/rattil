@@ -24,7 +24,9 @@ import '../../data/services/recitation_service.dart';
 import '../../data/services/tafseer_service.dart';
 import '../../providers/display_design_provider.dart';
 import '../../providers/mushaf_script_provider.dart';
-import 'widgets/nastaleeq_page_view.dart';
+import 'nastaleeq/nastaleeq_edition.dart';
+import 'nastaleeq/nastaleeq_page_map.dart';
+import 'nastaleeq/nastaleeq_page_view.dart';
 import '../../providers/quran_providers.dart';
 import '../../providers/tutorial_provider.dart';
 import '../../providers/surah_player_provider.dart';
@@ -111,11 +113,11 @@ class QuranMainScreen extends ConsumerWidget {
     return progressAsync.when(
       data: (progress) {
         FlutterNativeSplash.remove();
+        final surah = progress['surah_number']!;
+        final ayah = progress['ayah_number']!;
         return _AppShell(
-          initialPage: quran.getPageNumber(
-            progress['surah_number']!,
-            progress['ayah_number']!,
-          ),
+          initialPage: quran.getPageNumber(surah, ayah),
+          resumeVerseKey: nastaleeqVerseKey(surah, ayah),
         );
       },
       loading: () => Scaffold(backgroundColor: colors.background),
@@ -129,7 +131,8 @@ class QuranMainScreen extends ConsumerWidget {
 
 class _AppShell extends ConsumerStatefulWidget {
   final int initialPage;
-  const _AppShell({required this.initialPage});
+  final int? resumeVerseKey;
+  const _AppShell({required this.initialPage, this.resumeVerseKey});
 
   @override
   ConsumerState<_AppShell> createState() => _AppShellState();
@@ -138,6 +141,9 @@ class _AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<_AppShell> {
   int _activeTab = _kQuranTab;
   late int _currentPage;
+  late int _displayPage;
+  int _displayPageCount = quran.totalPagesCount;
+  int? _readingVerseKey;
   bool _showChrome = false;
   bool _transitioning = false;
   int _currentJuz = 1;
@@ -149,11 +155,24 @@ class _AppShellState extends ConsumerState<_AppShell> {
   final _nastaleeqPageKey = GlobalKey<NastaleeqPageViewState>();
   BuildContext? _showcaseContext;
 
-  void _goToPage(int page, {int? highlightVerseKey}) {
+  void _goToPage(int page, {int? highlightVerseKey, int? targetVerseKey}) {
     _mushafPageKey.currentState
         ?.goToPage(page, highlightVerseKey: highlightVerseKey);
-    _nastaleeqPageKey.currentState
-        ?.goToPage(page, highlightVerseKey: highlightVerseKey);
+    _nastaleeqPageKey.currentState?.goToPage(
+      page,
+      highlightVerseKey: highlightVerseKey,
+      targetVerseKey: targetVerseKey,
+    );
+  }
+
+  void _goToVerse(int surah, int ayah, {bool highlight = false}) {
+    final verseKey = nastaleeqVerseKey(surah, ayah);
+    _readingVerseKey = verseKey;
+    _goToPage(
+      quran.getPageNumber(surah, ayah),
+      highlightVerseKey: highlight ? verseKey : null,
+      targetVerseKey: verseKey,
+    );
   }
 
   bool get _isMushaf => _activeTab == _kQuranTab;
@@ -176,13 +195,21 @@ class _AppShellState extends ConsumerState<_AppShell> {
       _lastManualTurnAt = null;
     }
 
-    final key = chapter * 1000 + verse;
+    final key = nastaleeqVerseKey(chapter, verse);
     if (_lastFollowedVerseKey == key) return;
     _lastFollowedVerseKey = key;
 
     final manual = _lastManualTurnAt;
     if (manual != null &&
         DateTime.now().difference(manual) < const Duration(seconds: 10)) {
+      return;
+    }
+
+    final nastaleeq = _nastaleeqPageKey.currentState;
+    if (nastaleeq != null) {
+      if (nastaleeq.showsVerse(key)) return;
+      _audioTurnAt = DateTime.now();
+      nastaleeq.revealVerse(key);
       return;
     }
 
@@ -206,6 +233,8 @@ class _AppShellState extends ConsumerState<_AppShell> {
   void initState() {
     super.initState();
     _currentPage = widget.initialPage;
+    _displayPage = widget.initialPage;
+    _readingVerseKey = widget.resumeVerseKey;
     _loadPageMetadata(widget.initialPage);
   }
 
@@ -284,15 +313,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
   }
 
   Future<void> _navigateToReader(ReaderNavigationRequest req) async {
-    final page = quran.getPageNumber(req.surahNumber, req.ayahNumber);
-    final verseKey = req.highlight
-        ? req.surahNumber * 1000 + req.ayahNumber
-        : null;
+    void goToRequest() => _goToVerse(
+          req.surahNumber,
+          req.ayahNumber,
+          highlight: req.highlight,
+        );
 
     // If already on the Quran tab, just navigate the page directly.
     if (_activeTab == _kQuranTab) {
-      _goToPage(page,
-          highlightVerseKey: verseKey);
+      goToRequest();
       return;
     }
 
@@ -308,8 +337,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
       _activeTab = _kQuranTab;
       _showChrome = true;
     });
-    _goToPage(page,
-        highlightVerseKey: verseKey);
+    goToRequest();
 
     // Let the target page render one frame.
     await Future.delayed(const Duration(milliseconds: 50));
@@ -340,7 +368,13 @@ class _AppShellState extends ConsumerState<_AppShell> {
   }
 
   void _onPageChanged(int page) {
-    setState(() => _currentPage = page);
+    final nastaleeq = _nastaleeqPageKey.currentState;
+    setState(() {
+      _currentPage = page;
+      _displayPage = nastaleeq?.currentPage ?? page;
+      _displayPageCount = nastaleeq?.pageCount ?? quran.totalPagesCount;
+      _readingVerseKey = nastaleeq?.anchorVerseKey ?? _madinahReadingVerse(page);
+    });
     _loadPageMetadata(page);
 
     final audioTurn = _audioTurnAt;
@@ -350,16 +384,31 @@ class _AppShellState extends ConsumerState<_AppShell> {
     }
     _lastManualTurnAt = DateTime.now();
 
-    final pageData = quran.getPageData(page);
-    if (pageData.isNotEmpty) {
-      final firstSurah = pageData.first['surah'] as int;
-      final firstVerse = pageData.first['start'] as int;
-      ref
-          .read(quranRepositoryProvider)
-          .updateReadingProgress(firstSurah, firstVerse);
+    final readingVerse = _readingVerseKey;
+    if (readingVerse != null) {
+      ref.read(quranRepositoryProvider).updateReadingProgress(
+            nastaleeqVerseChapter(readingVerse),
+            nastaleeqVerseNumber(readingVerse),
+          );
       ref.invalidate(readingProgressProvider);
     }
   }
+
+  int _madinahReadingVerse(int page) {
+    final current = _readingVerseKey;
+    final keepsCurrent = current != null &&
+        quran.getPageNumber(
+              nastaleeqVerseChapter(current),
+              nastaleeqVerseNumber(current),
+            ) ==
+            page;
+    return keepsCurrent ? current : nastaleeqMadinahPageStart(page);
+  }
+
+  ({int page, int count}) get _pagePosition =>
+      ref.read(mushafScriptModeProvider).nastaleeqEdition == null
+          ? (page: _currentPage, count: quran.totalPagesCount)
+          : (page: _displayPage, count: _displayPageCount);
 
   String get _currentSurahName {
     final pageData = quran.getPageData(_currentPage);
@@ -432,9 +481,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => PagePickerSheet(
-        currentPage: _currentPage,
+        currentPage: _pagePosition.page,
+        pageCount: _pagePosition.count,
         onPageSelected: (page) {
-          _goToPage(page);
+          final nastaleeq = _nastaleeqPageKey.currentState;
+          if (nastaleeq != null) {
+            nastaleeq.openPage(page);
+          } else {
+            _goToPage(page);
+          }
         },
       ),
     );
@@ -452,10 +507,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
         parent: ProviderScope.containerOf(context),
         child: SurahPickerSheet(
           currentSurahNumber: currentSurah,
-          onSurahSelected: (surahNumber) {
-            final page = quran.getPageNumber(surahNumber, 1);
-            _goToPage(page);
-          },
+          onSurahSelected: (surahNumber) => _goToVerse(surahNumber, 1),
         ),
       ),
     );
@@ -643,17 +695,19 @@ class _AppShellState extends ConsumerState<_AppShell> {
           ),
           child: child!,
         ),
-        child: ref.watch(mushafScriptModeProvider) == MushafScript.nastaleeq
-            ? NastaleeqPageView(
+        child: switch (ref.watch(mushafScriptModeProvider).nastaleeqEdition) {
+          final edition? => NastaleeqPageView(
                 key: _nastaleeqPageKey,
+                edition: edition,
                 initialPage: _currentPage,
+                initialVerseKey: _readingVerseKey,
                 onPageChanged: _onPageChanged,
                 onTap: _toggleChrome,
                 onVerseLongPress: _onVerseLongPress,
                 readingTheme: mushafTheme,
                 audioHighlightsColor: colors.gold,
-              )
-            : imad.MushafPageView(
+              ),
+          null => imad.MushafPageView(
                 key: _mushafPageKey,
                 initialPage: _currentPage,
                 onPageChanged: _onPageChanged,
@@ -665,6 +719,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
                 readingTheme: mushafTheme,
                 audioHighlightsColor: colors.gold,
               ),
+        },
       ),
     );
   }
@@ -1033,7 +1088,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
       child: GestureDetector(
         onTap: _showPagePicker,
         child: Text(
-          '${Locales.string(context, 'page')} $_currentPage / 604',
+          '${Locales.string(context, 'page')} ${_pagePosition.page} / ${_pagePosition.count}',
           style: metaStyle.copyWith(fontWeight: FontWeight.w400),
         ),
       ),

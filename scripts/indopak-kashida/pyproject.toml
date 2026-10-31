@@ -1,0 +1,8 @@
+[project]
+name = "indopak-kashida"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = ["uharfbuzz==0.57.0", "fonttools==4.68.0"]
+
+[tool.uv]
+package = false

@@ -24,17 +24,17 @@
 
 ## Features
 
-- **Quran Reader** — Complete Quran in Uthmanic Hafs script, 604 pages, fully offline
-- **Search** — Find any surah or verse by Arabic text or surah name
-- **Bookmarks** — Save and organize verses for easy reference
-- **Hifz Tracking** — Track memorization progress juz by juz, page by page
-- **Wird** — Set daily reading goals with reminders and track consistency
-- **Tikrar** — Memorize verses through structured repetition with audio recitation
-- **Tasmi'** — AI-powered recitation verification *(coming soon)*
-- **44 Languages** — Full interface localization
-- **Home Widget** — iOS widget displaying a random Quran verse, updated hourly
-- **Dark & Light Theme** — System-aware with manual toggle
-- **Privacy** — No accounts, no tracking, no ads, no analytics. All data stays on your device.
+- **Quran Reader**: Complete Quran in Uthmanic Hafs script, 604 pages, fully offline, plus the Nastaleeq (Indo-Pak) script in two editions: DigitalKhatt IndoPak (the printed 15-line, 610-page Indo-Pak layout) and the King Fahd Complex's Hafs Nastaleeq (flowing over the 604 Madinah pages)
+- **Search**: Find any surah or verse by Arabic text or surah name
+- **Bookmarks**: Save and organize verses for easy reference
+- **Hifz Tracking**: Track memorization progress juz by juz, page by page
+- **Wird**: Set daily reading goals with reminders and track consistency
+- **Tikrar**: Memorize verses through structured repetition with audio recitation
+- **Tasmi'**: AI-powered recitation verification *(coming soon)*
+- **44 Languages**: Full interface localization
+- **Home Widget**: iOS widget displaying a random Quran verse, updated hourly
+- **Dark & Light Theme**: System-aware with manual toggle
+- **Privacy**: No accounts, no tracking, no ads, no analytics. All data stays on your device.
 
 ## Tech Stack
 
@@ -45,7 +45,7 @@
 | API | FastAPI (Python) — Tasmi' transcription service |
 | AI Model | [tarteel-ai/whisper-base-ar-quran](https://huggingface.co/tarteel-ai/whisper-base-ar-quran) |
 | Web | Next.js 16, Tailwind CSS v4, Tolgee i18n |
-| Fonts | UthmanicHafs (Quran), NeueFrutigerWorld (UI) |
+| Fonts | UthmanicHafs (Madinah), DigitalKhatt IndoPak and KFGQPC Hafs Nastaleeq (Nastaleeq), NeueFrutigerWorld (UI) |
 | Monorepo | Turborepo, Bun |
 
 ## Project Structure
@@ -110,7 +110,7 @@ dart run build_runner build --delete-conflicting-outputs
 | Background (dark) | `#0D0D0D` |
 | Surface (light) | `#FFFFFF` |
 | Surface (dark) | `#1A1A1A` |
-| Quran font | UthmanicHafs |
+| Quran font | UthmanicHafs (Madinah), DigitalKhatt IndoPak or KFGQPC Hafs Nastaleeq (Nastaleeq) |
 | UI font | NeueFrutigerWorld (400/500/700) |
 | Border radius | 16px (cards), 12px (secondary), 8px (small) |
 
@@ -120,7 +120,13 @@ Rattil does not collect, store, or transmit any personal data. No accounts, no a
 
 ## License
 
-All Quran text is in the public domain. See individual font licenses in `apps/mobile/assets/fonts/`.
+The Quran text and fonts bundled with the app come from these sources, each under its own licence:
+
+- **DigitalKhatt IndoPak text**: the DigitalKhatt IndoPak 15-line text, Copyright (c) 2020–present DigitalKhatt contributors, MIT License ([digitalkhatt-js](https://github.com/DigitalKhatt/digitalkhatt-js)). The reader uses its 15-line Indo-Pak page and line layout (610 pages) from the same pinned source. Notice in `apps/mobile/assets/quran/indopak-digitalkhatt-LICENSE.txt`.
+- **DigitalKhatt IndoPak font**: Copyright (c) 2024-2025 Amine Anane, Copyright (c) 2024-2025 Tarteel Inc., SIL Open Font License 1.1 ([indopakfont](https://github.com/DigitalKhatt/indopakfont)). Licence in `apps/mobile/assets/fonts/DigitalKhattIndoPak-OFL.txt`.
+- **KFGQPC Hafs Nastaleeq font and text**: from the King Fahd Glorious Quran Printing Complex (`HafsNastaleeq-Ver10.zip`), used under the KFGQPC licence. The font is shipped unmodified. The text keeps the published letters, vowel marks and pause signs, with the display-only normalisations listed in the provenance notice (collapsed whitespace, a no-break space before each ayah number, and a combining grapheme joiner in eight verses). Licence in `apps/mobile/assets/fonts/HafsNastaleeq-LICENSE.txt`, provenance in `apps/mobile/assets/quran/indopak-kfgqpc-NOTICE.txt`.
+
+See the remaining font licences in `apps/mobile/assets/fonts/`.
 
 ---
 

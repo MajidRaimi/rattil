@@ -268,5 +268,7 @@
   "script_madinah": "Madinah Mushaf",
   "script_madinah_desc": "The Uthmani script with the original printed page layout.",
   "script_nastaleeq": "Nastaleeq",
-  "script_nastaleeq_desc": "The flowing Nastaleeq script from the King Fahd Complex. Text reflows to fit your screen."
+  "script_nastaleeq_desc": "The Indo-Pak script of mushafs printed across South Asia. Text reflows to fit your screen.",
+  "script_nastaleeq_kfgqpc": "Nastaleeq (King Fahd Complex)",
+  "script_nastaleeq_kfgqpc_desc": "The King Fahd Complex's official Nastaleeq font and text, with a lighter pen. Text reflows to fit your screen."
 }
